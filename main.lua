@@ -19,7 +19,6 @@ _G.CheatConfig = {
     TargetZ = -0.2799992561340332,
     SpinSpeed = 25,
     
-    -- НАСТРОЙКИ ТАЙМЕРОВ ТРЕХ ПРЕДМЕТОВ
     GreataxeTime = 4,       
     HeartbanisherTime = 1.5, 
     PickaxeTime = 2,        
@@ -259,116 +258,8 @@ task.spawn(function()
         task.wait(_G.CheatConfig.AntiAfkDelay)
     end
 end)
--- [[ PART 2: 3-Phase Inventory Management, Ore/Mob Magnets & World Loops ]]
-
-local function ExecuteInventoryManagement()
-    local backpack = player:FindFirstChild("Backpack")
-    local character = player.Character
-    if not backpack or not character then return end
-
-    local currentTool = character:FindFirstChildOfClass("Tool")
-    local targetToolName = nil
-
-    if _G.FarmState.CurrentPhase == "Greataxe" then
-        targetToolName = "Greataxe of Love"
-    elseif _G.FarmState.CurrentPhase == "Heartbanisher" then
-        targetToolName = "Heartbanisher"
-    elseif _G.FarmState.CurrentPhase == "Pickaxe" then
-        targetToolName = "Ultimate Pickaxe"
-    end
-
-    if targetToolName and _G.FarmState.LastMode ~= targetToolName then
-        if not currentTool or currentTool.Name ~= targetToolName then
-            local targetTool = backpack:FindFirstChild(targetToolName)
-            if targetTool then
-                _G.FarmState.LastMode = targetToolName
-                if currentTool then currentTool.Parent = backpack end 
-                targetTool.Parent = character 
-            end
-        end
-    end
-end
-
-local function ExecuteScheduledFly()
-    local character = player.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-    local rootPart = character.HumanoidRootPart
-
-    local prompts = {}
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") then table.insert(prompts, obj) end
-    end
-
-    if #prompts == 0 then return end
-    _G.FarmState.IsFlyingToButtons = true
-    
-    for _, prompt in ipairs(prompts) do
-        if prompt and prompt.Parent then
-            pcall(function()
-                local parentPart = prompt.Parent:IsA("BasePart") and prompt.Parent or prompt.Parent:FindFirstChildOfClass("BasePart")
-                if parentPart then
-                    rootPart.CFrame = parentPart.CFrame * CFrame.new(0, 2, 0)
-                    task.wait(0.2)
-                    if fireproximityprompt then 
-                        fireproximityprompt(prompt) 
-                    else
-                        prompt:InputHoldBegin()
-                        task.wait(prompt.HoldDuration + 0.05)
-                        prompt:InputHoldEnd()
-                    end
-                    task.wait(0.15)
-                end
-            end)
-        end
-    end
-    _G.FarmState.IsFlyingToButtons = false
-end
-
-local function ProcessWorldTriggers()
-    local character = player.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-    local rootPart = character.HumanoidRootPart
-
-    if _G.CheatConfig.AntiSitActive then
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        if humanoid and humanoid.Sit then
-            pcall(function()
-                humanoid.Sit = false
-                rootPart.CFrame = rootPart.CFrame * CFrame.new(0, 5, 0) 
-            end)
-        end
-    end
-
-    if _G.CheatConfig.AutoClickTools then
-        local tool = character:FindFirstChildOfClass("Tool")
-        if tool then pcall(function() tool:Activate() end) end
-    end
-
-    if _G.CheatConfig.MagnetOres then
-        for _, mineName in ipairs(_G.CheatConfig.MineFolders) do
-            local mineFolder = Workspace:FindFirstChild(mineName)
-            if mineFolder then
-                for _, child in ipairs(mineFolder:GetDescendants()) do
-                    if child:IsA("Model") and (child:FindFirstChild("Ore") or child:FindFirstChild("Block")) then
-                        local orePart = child:FindFirstChildOfClass("Part") or child:FindFirstChildOfClass("MeshPart") or child:FindFirstChild("Ore")
-                        if orePart then
-                            pcall(function()
-                                orePart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                                orePart.CFrame = rootPart.CFrame * CFrame.new(0, -3, 0)
-                            end)
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    if _G.CheatConfig.MagnetMobs then
-        for _, obj in ipairs(Workspace:GetChildren()) do
-            if obj:IsA("Model") and obj ~= character and obj:FindFirstChildOfClass("Humanoid") then
 -- [[ PART 2: Core Farm Loops, Ultra-Comprehensive Ore Magnet & World Loops ]]
 
--- Полный глобальный список всех руд, найденных в Википедиях Craftwars
 local ComprehensiveOresList = {
     "Iron", "Gold", "Diamond", "Bluesteel", "Amberstone", "Crystal", 
     "Viridis", "Vermite", "Ore Clump", "Ultimus", "Optimum", "Unobtanium", 
@@ -380,7 +271,6 @@ local ComprehensiveOresList = {
     "Tanzanite", "Originite", "Pitcholamadamantinite"
 }
 
--- 🎒 1. Умная 3-фазная ротация предметов (Greataxe -> Heartbanisher [X] -> Кирка)
 local function ExecuteInventoryManagement()
     local backpack = player:FindFirstChild("Backpack")
     local character = player.Character
@@ -409,7 +299,6 @@ local function ExecuteInventoryManagement()
     end
 end
 
--- 🚀 2. Поочередный облет всплывающих кнопок "Е" (Раз в минуту)
 local function ExecuteScheduledFly()
     local character = player.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
@@ -445,13 +334,11 @@ local function ExecuteScheduledFly()
     _G.FarmState.IsFlyingToButtons = false
 end
 
--- 🛠️ 3. Основная обработка триггеров мира, мобов и РАСШИРЕННОГО МАГНИТА РУД
 local function ProcessWorldTriggers()
     local character = player.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
     local rootPart = character.HumanoidRootPart
 
-    -- Модуль автоматического вставания со стульев/транспорта (Anti-Sit)
     if _G.CheatConfig.AntiSitActive then
         local humanoid = character:FindFirstChildOfClass("Humanoid")
         if humanoid and humanoid.Sit then
@@ -462,13 +349,11 @@ local function ProcessWorldTriggers()
         end
     end
 
-    -- Автоудар зажатым в руке предметом
     if _G.CheatConfig.AutoClickTools then
         local tool = character:FindFirstChildOfClass("Tool")
         if tool then pcall(function() tool:Activate() end) end
     end
 
-    -- РАСШИРЕННЫЙ МАГНИТ ДЛЯ ВСЕХ ВИДОВ РУД ИЗ ВИКИПЕДИИ
     if _G.CheatConfig.MagnetOres then
         for _, mineName in ipairs(_G.CheatConfig.MineFolders) do
             local mineFolder = Workspace:FindFirstChild(mineName)
@@ -476,21 +361,15 @@ local function ProcessWorldTriggers()
                 for _, child in ipairs(mineFolder:GetDescendants()) do
                     if child:IsA("Model") then
                         local isTargetOre = false
-                        
-                        -- Проверка 1: Совпадает ли имя модели с базой данных руд из Вики
                         for _, oreName in ipairs(ComprehensiveOresList) do
                             if string.find(string.lower(child.Name), string.lower(oreName)) then
                                 isTargetOre = true
                                 break
                             end
                         end
-                        
-                        -- Проверка 2: Содержит ли модель ключевые триггеры руды (Ore, Block, или папки)
                         if child:FindFirstChild("Ore") or child:FindFirstChild("Block") or string.find(string.lower(child.Name), "ore") then
                             isTargetOre = true
                         end
-                        
-                        -- Если это руда, стягиваем её под ноги игроку
                         if isTargetOre then
                             local orePart = child:FindFirstChildOfClass("Part") or child:FindFirstChildOfClass("MeshPart") or child:FindFirstChild("Ore") or child.PrimaryPart
                             if orePart then
@@ -506,7 +385,6 @@ local function ProcessWorldTriggers()
         end
     end
 
-    -- Магнит мобов
     if _G.CheatConfig.MagnetMobs then
         for _, obj in ipairs(Workspace:GetChildren()) do
             if obj:IsA("Model") and obj ~= character and obj:FindFirstChildOfClass("Humanoid") then
@@ -521,7 +399,6 @@ local function ProcessWorldTriggers()
         end
     end
 
-    -- Автонажатие кнопок на расстоянии
     if _G.CheatConfig.AutoClickPrompts and not _G.FarmState.IsFlyingToButtons then
         for _, obj in ipairs(Workspace:GetDescendants()) do
             if obj:IsA("ProximityPrompt") then
@@ -532,10 +409,6 @@ local function ProcessWorldTriggers()
         end
     end
 end
-
--- ========================================================================
--- ИГРОВЫЕ СИНХРОННЫЕ ПОТОКИ (ПОДКЛЮЧЕНИЕ СЕРВИСОВ)
--- ========================================================================
 
 RunService.Heartbeat:Connect(function()
     if _G.CheatConfig.MainFarmActive and not _G.FarmState.IsFlyingToButtons then
@@ -559,7 +432,6 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Управление 3-х фазным таймером ротации предметов
 task.spawn(function()
     while true do
         _G.FarmState.CurrentPhase = "Greataxe"
@@ -587,4 +459,4 @@ task.spawn(function()
     end
 end)
 
-print("[Elite Hub v10.0]: Все руды из Википедии добавлены. Вторая часть успешно инициализирована!")
+print("[Elite Hub v10.0]: Все руды из Википедии добавлены. Скрипт полностью готов!")
