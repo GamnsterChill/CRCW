@@ -1,7 +1,7 @@
 --[[
     ========================================================================
-    PROJECT: Classic Retro Craftwars - Elite Customizable Hub (v7.0)
-    PART 1: GUI, Config, Anti-AFK & Anti-Sit
+    PROJECT: Classic Retro Craftwars - Elite Customizable Hub (v7.5)
+    PART 1: GUI, Config, Anti-AFK & Anti-Sit (STABLE)
     ========================================================================
 ]]
 
@@ -36,15 +36,16 @@ _G.CheatConfig = {
     AutoClickTools = true,
     AutoClickPrompts = true,
     AntiAfkActive = true,
-    AntiSitActive = true -- Новая функция автоматического вставания
+    AntiSitActive = true
 }
 
 _G.FarmState = {
     ForcePickaxe = false,
-    LastMode = nil
+    LastMode = nil,
+    IsFlyingToButtons = false
 }
 
--- СОЗДАНИЕ ГРАФИЧЕСКОГО ИНТЕРФЕЙСА
+-- СОЗДАНИЕ ГРАФИЧЕСКОГО ИНТЕРФЕЙСА (GUI)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "CraftwarsEliteGui"
 pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
@@ -79,7 +80,7 @@ MainCorner.Parent = MainFrame
 
 local Header = Instance.new("TextLabel")
 Header.Size = UDim2.new(1, 0, 0, 40)
-Header.Text = "CRAFTWARS ELITE HUB v7.0"
+Header.Text = "CRAFTWARS ELITE HUB v7.5"
 Header.TextColor3 = Color3.fromRGB(255, 255, 255)
 Header.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 Header.Font = Enum.Font.SourceSansBold
@@ -210,7 +211,7 @@ CreateToggle("Анти-АФК защита", "AntiAfkActive")
 
 CreateInput("Скорость вращения персонажа", "SpinSpeed", true)
 CreateInput("Время удержания оружия (сек)", "WeaponTime", true)
-CreateInput("Время удержанияир ки (сек)", "PickaxeTime", true)
+CreateInput("Время удержания кирки (сек)", "PickaxeTime", true)
 CreateInput("Скорость кликов/магнита (сек)", "TriggerDelay", true)
 CreateInput("Интервал Анти-АФК кликов (сек)", "AntiAfkDelay", true)
 CreateInput("Координата позиции X", "TargetX", true)
@@ -228,11 +229,7 @@ task.spawn(function()
         task.wait(_G.CheatConfig.AntiAfkDelay)
     end
 end)
---[[
-    ========================================================================
-    PART 2: Core Loop, Inventory, Magnets & Anti-Sit Module
-    ========================================================================
-]]
+-- [[ PART 2: Core Farm Loops, Magnets & Fixed Scheduled Fly ]]
 
 local function ExecuteInventoryManagement()
     local backpack = player:FindFirstChild("Backpack")
@@ -260,18 +257,58 @@ local function ExecuteInventoryManagement()
     end
 end
 
+-- ИСПРАВЛЕННАЯ ФУНКЦИЯ ОБЛЕТА КНОПОК
+local function ExecuteScheduledFly()
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+    local rootPart = character.HumanoidRootPart
+
+    local prompts = {}
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") then
+            table.insert(prompts, obj)
+        end
+    end
+
+    if #prompts == 0 then return end
+
+    _G.FarmState.IsFlyingToButtons = true
+    
+    for _, prompt in ipairs(prompts) do
+        if prompt and prompt.Parent then
+            pcall(function()
+                local parentPart = prompt.Parent:IsA("BasePart") and prompt.Parent or prompt.Parent:FindFirstChildOfClass("BasePart")
+                if parentPart then
+                    rootPart.CFrame = parentPart.CFrame * CFrame.new(0, 2, 0)
+                    task.wait(0.15)
+                    if fireproximityprompt then 
+                        fireproximityprompt(prompt) 
+                    else
+                        prompt:InputHoldBegin()
+                        task.wait(prompt.HoldDuration + 0.05)
+                        prompt:InputHoldEnd()
+                    end
+                    task.wait(0.15)
+                end
+            end)
+        end
+    end
+
+    _G.FarmState.IsFlyingToButtons = false
+end
+
 local function ProcessWorldTriggers()
     local character = player.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
     local rootPart = character.HumanoidRootPart
 
-    -- Модуль Анти-Сидения (Защита от принудительной посадки на стулья/транспорт)
+    -- Модуль автоматического вставания со стульев/транспорта
     if _G.CheatConfig.AntiSitActive then
         local humanoid = character:FindFirstChildOfClass("Humanoid")
         if humanoid and humanoid.Sit then
             pcall(function()
                 humanoid.Sit = false
-                rootPart.CFrame = rootPart.CFrame * CFrame.new(0, 3, 0) -- Мгновенно подкидывает вверх
+                rootPart.CFrame = rootPart.CFrame * CFrame.new(0, 4, 0)
             end)
         end
     end
@@ -314,7 +351,7 @@ local function ProcessWorldTriggers()
         end
     end
 
-    if _G.CheatConfig.AutoClickPrompts then
+    if _G.CheatConfig.AutoClickPrompts and not _G.FarmState.IsFlyingToButtons then
         for _, obj in ipairs(Workspace:GetDescendants()) do
             if obj:IsA("ProximityPrompt") then
                 pcall(function()
@@ -326,7 +363,7 @@ local function ProcessWorldTriggers()
 end
 
 RunService.Heartbeat:Connect(function()
-    if _G.CheatConfig.MainFarmActive then
+    if _G.CheatConfig.MainFarmActive and not _G.FarmState.IsFlyingToButtons then
         local character = player.Character
         if character and character:FindFirstChild("HumanoidRootPart") then
             local currentCFrame = CFrame.new(_G.CheatConfig.TargetX, _G.CheatConfig.TargetY, _G.CheatConfig.TargetZ)
@@ -363,4 +400,12 @@ task.spawn(function()
     end
 end)
 
-print("[Elite Hub]: Финальная часть загружена. Проект v7.0 готов к стабильной работе!")
+-- Ежеминутный таймер облета кнопок взаимодействия (Исправлен)
+task.spawn(function()
+    while true do
+        task.wait(60)
+        ExecuteScheduledFly()
+    end
+end)
+
+print("[Elite Hub]: Проект v7.5 полностью собран и запущен без ошибок!")
