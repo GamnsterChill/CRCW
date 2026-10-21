@@ -1,5 +1,5 @@
--- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub (v13.0) ]]
--- [[ PART 1: GUI, Configuration, Anti-AFK & Hardware Input Loops ]]
+-- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub (v14.0) ]]
+-- [[ PART 1: GUI, Configuration, Anti-AFK & Core Screen Spammers ]]
 
 if _G.CraftwarsEliteLoaded then
     local oldGui = game:GetService("CoreGui"):FindFirstChild("CraftwarsEliteGui") or game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("CraftwarsEliteGui")
@@ -24,8 +24,8 @@ _G.CheatConfig = {
     PickaxeTime = 5,        
     
     AntiAfkDelay = 60,
-    TriggerDelay = 0.01,    -- Максимальная отзывчивость триггеров
-    ClickDelay = 0.01,      -- Турбо-скорость автокликера
+    TriggerDelay = 0.01,    
+    ClickDelay = 0.01,      
     MineFolders = {"Mine", "Mine2", "Mine3"},
     
     MainFarmActive = true,
@@ -80,7 +80,7 @@ MainCorner.Parent = MainFrame
 
 local Header = Instance.new("TextLabel")
 Header.Size = UDim2.new(1, 0, 0, 40)
-Header.Text = "CRAFTWARS ELITE HUB v13.0"
+Header.Text = "CRAFTWARS ELITE HUB v14.0"
 Header.TextColor3 = Color3.fromRGB(255, 255, 255)
 Header.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 Header.Font = Enum.Font.SourceSansBold
@@ -255,7 +255,7 @@ task.spawn(function()
         task.wait(_G.CheatConfig.AntiAfkDelay)
     end
 end)
--- [[ PART 2: Core Farm Loops, Ultra-Comprehensive Ore Magnet & World Loops ]]
+-- [[ PART 2: 3-Phase Inventory, Ore Magnet & Fixed Screen UI Ability Clicker ]]
 
 local ComprehensiveOresList = {
     "Iron", "Gold", "Diamond", "Bluesteel", "Amberstone", "Crystal", 
@@ -296,29 +296,26 @@ local function ExecuteInventoryManagement()
     end
 end
 
--- ТОТ САМЫЙ ОРИГИНАЛЬНЫЙ МЕТОД: ТОТАЛЬНЫЙ СПАМ ВСЕХ СЕТЕВЫХ ПОВОДОК ПРЕДМЕТА
-local function FireAllToolRemotes(tool)
-    -- Проходим по абсолютно всем внутренним объектам зажатого оружия
-    for _, item in ipairs(tool:GetDescendants()) do
-        -- Перехватываем ВСЕ типы сетевых событий и вызываем их без разбора, заставляя активироваться всё комбо
-        if item:IsA("RemoteEvent") then
-            pcall(function() 
-                item:FireServer() 
-                item:FireServer("Attack")
-                item:FireServer("Skill")
-                item:FireServer("Heartbleed")
-                item:FireServer("Cast")
-                item:FireServer(true)
-            end)
-        elseif item:IsA("RemoteFunction") then
-            pcall(function() 
-                item:InvokeServer() 
-                item:InvokeServer("Attack")
-                item:InvokeServer("Skill")
-                item:InvokeServer("Heartbleed")
-                item:InvokeServer("Cast")
-                item:InvokeServer(true)
-            end)
+-- ИСПРАВЛЕННЫЙ МЕТОД ОБХОДА МЕТАТАБЛИЦ: Нажатие физических кнопок UI способностей на экране
+local function ClickScreenAbilityButtons()
+    local playerGui = player:FindFirstChild("PlayerGui")
+    if not playerGui then return end
+
+    -- Сканируем весь графический интерфейс игрока на мобильном экране
+    for _, guiObj in ipairs(playerGui:GetDescendants()) do
+        if guiObj:IsA("TextButton") or guiObj:IsA("ImageButton") then
+            local nameLower = string.lower(guiObj.Name)
+            local textLower = guiObj:IsA("TextButton") and string.lower(guiObj.Text) or ""
+            
+            -- Проверяем любые совпадения с кнопками способностей (Hearthbleed, Barrage, X, Skill)
+            if string.find(nameLower, "heart") or string.find(nameLower, "bleed") or string.find(nameLower, "skill") or string.find(nameLower, "ability") or string.find(textLower, "heart") or nameLower == "x" then
+                pcall(function()
+                    -- Имитируем реальное нажатие на кнопку интерфейса в обход античита
+                    guiObj:Activate()
+                    local events = guiObj:FindFirstChildOfClass("RemoteEvent") or guiObj:FindFirstChildOfClass("BindableEvent")
+                    if events then events:FireServer() end
+                end)
+            end
         end
     end
 end
@@ -377,12 +374,14 @@ local function ProcessWorldTriggers()
         local tool = character:FindFirstChildOfClass("Tool")
         if tool then 
             pcall(function() tool:Activate() end)
-            -- Запуск оригинального тотального спама сетевых папок для ЛЮБОГО оружия в руке
-            FireAllToolRemotes(tool)
+            -- Вызываем клик по экранным кнопкам способностей всегда, когда в руке боевое оружие
+            if tool.Name == "Heartbanisher" or tool.Name == "Greataxe of Love" then
+                ClickScreenAbilityButtons()
+            end
         end
     end
 
-    -- МОДУЛЬ НАДЁЖНОЙ ФИКСАЦИИ РУДЫ НА УРОВНЕ ПОЯСА ИГРОКА
+    -- МОДЕРНИЗИРОВАННЫЙ МОДУЛЬ РУДЫ: ФИКСАЦИЯ ПЕРЕД ЛИЦОМ ИГРОКА
     if _G.CheatConfig.MagnetOres then
         for _, mineName in ipairs(_G.CheatConfig.MineFolders) do
             local mineFolder = Workspace:FindFirstChild(mineName)
@@ -407,7 +406,7 @@ local function ProcessWorldTriggers()
                                     orePart.Anchored = true 
                                     orePart.Velocity = Vector3.new(0, 0, 0)
                                     orePart.RotVelocity = Vector3.new(0, 0, 0)
-                                    -- Руда удерживается прямо перед лицом игрока, не проваливаясь
+                                    -- Руда прибивается на уровень груди перед игроком
                                     orePart.CFrame = rootPart.CFrame * CFrame.new(0, 0, -2)
                                 end)
                             end
@@ -492,4 +491,4 @@ task.spawn(function()
     end
 end)
 
-print("[Elite Hub v13.0]: Тотальный метод поводков оружия восстановлен!")
+print("[Elite Hub v14.0]: Физическая эмуляция кликов способностей на экране активирована!")
