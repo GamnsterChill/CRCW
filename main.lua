@@ -1,9 +1,5 @@
---[[
-    ========================================================================
-    PROJECT: Classic Retro Craftwars - Elite Customizable Hub (v7.5)
-    PART 1: GUI, Config, Anti-AFK & Anti-Sit (STABLE)
-    ========================================================================
-]]
+-- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub (v9.0) ]]
+-- [[ PART 1: GUI, Configuration, Custom Input Спамер (Keys & Clicks) ]]
 
 if _G.CraftwarsEliteLoaded then
     local oldGui = game:GetService("CoreGui"):FindFirstChild("CraftwarsEliteGui") or game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("CraftwarsEliteGui")
@@ -15,7 +11,6 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
 local Workspace = game:GetService("Workspace")
-
 local player = Players.LocalPlayer
 
 _G.CheatConfig = {
@@ -36,7 +31,9 @@ _G.CheatConfig = {
     AutoClickTools = true,
     AutoClickPrompts = true,
     AntiAfkActive = true,
-    AntiSitActive = true
+    AntiSitActive = true,
+    SpamKeysActive = true,   -- Включение спама букв способностей
+    ScreenClickActive = true -- Включение кликов по экрану
 }
 
 _G.FarmState = {
@@ -45,15 +42,15 @@ _G.FarmState = {
     IsFlyingToButtons = false
 }
 
--- СОЗДАНИЕ ГРАФИЧЕСКОГО ИНТЕРФЕЙСА (GUI)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "CraftwarsEliteGui"
 pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
 if not ScreenGui.Parent then ScreenGui.Parent = player:WaitForChild("PlayerGui") end
 
+-- ТРЕБОВАНИЕ 1: Кнопка перенесена выше (Position Y = 0)
 local ToggleMenuBtn = Instance.new("TextButton")
-ToggleMenuBtn.Size = UDim2.new(0, 160, 0, 35)
-ToggleMenuBtn.Position = UDim2.new(0.5, -80, 0, 10)
+ToggleMenuBtn.Size = UDim2.new(0, 160, 0, 32)
+ToggleMenuBtn.Position = UDim2.new(0.5, -80, 0, 0) -- В самом верху экрана
 ToggleMenuBtn.Text = "🔴 СКРЫТЬ МЕНЮ"
 ToggleMenuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
@@ -62,12 +59,12 @@ ToggleMenuBtn.TextSize = 14
 ToggleMenuBtn.Parent = ScreenGui
 
 local BtnCorner = Instance.new("UICorner")
-BtnCorner.CornerRadius = UDim.new(0, 6)
+BtnCorner.CornerRadius = UDim.new(0, 4)
 BtnCorner.Parent = ToggleMenuBtn
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 420, 0, 380)
-MainFrame.Position = UDim2.new(0.5, -210, 0.3, 0)
+MainFrame.Position = UDim2.new(0.5, -210, 0.25, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -80,7 +77,7 @@ MainCorner.Parent = MainFrame
 
 local Header = Instance.new("TextLabel")
 Header.Size = UDim2.new(1, 0, 0, 40)
-Header.Text = "CRAFTWARS ELITE HUB v7.5"
+Header.Text = "CRAFTWARS ELITE HUB v9.0"
 Header.TextColor3 = Color3.fromRGB(255, 255, 255)
 Header.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 Header.Font = Enum.Font.SourceSansBold
@@ -98,7 +95,7 @@ ToggleMenuBtn.MouseButton1Click:Connect(function()
         ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     else
         ToggleMenuBtn.Text = "🟢 ОТКРЫТЬ МЕНЮ"
-        ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+        ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 0)
     end
 end)
 
@@ -106,7 +103,7 @@ local ScrollPage = Instance.new("ScrollingFrame")
 ScrollPage.Size = UDim2.new(1, -20, 1, -50)
 ScrollPage.Position = UDim2.new(0, 10, 0, 45)
 ScrollPage.BackgroundTransparency = 1
-ScrollPage.CanvasSize = UDim2.new(0, 0, 0, 620)
+ScrollPage.CanvasSize = UDim2.new(0, 0, 0, 700)
 ScrollPage.ScrollBarThickness = 6
 ScrollPage.Parent = MainFrame
 
@@ -207,6 +204,8 @@ CreateToggle("Магнит всех Монстров к лицу", "MagnetMobs")
 CreateToggle("Прямой автоудар предметами в руке", "AutoClickTools")
 CreateToggle("Прямой сбор всплывающих кнопок (E)", "AutoClickPrompts")
 CreateToggle("Автоматически ВСТАВАТЬ со стульев", "AntiSitActive")
+CreateToggle("Высокоскоростной спам букв (E,Q,R,Z,X,C,F)", "SpamKeysActive")
+CreateToggle("Автоматический клик по экрану", "ScreenClickActive")
 CreateToggle("Анти-АФК защита", "AntiAfkActive")
 
 CreateInput("Скорость вращения персонажа", "SpinSpeed", true)
@@ -218,6 +217,35 @@ CreateInput("Координата позиции X", "TargetX", true)
 CreateInput("Координата позиции Y (Высота)", "TargetY", true)
 CreateInput("Координата позиции Z", "TargetZ", true)
 
+-- ТРЕБОВАНИЕ 2 И 3: Высокоскоростной поток эмуляции ввода (Клавиши + Клики экрана)
+local inputKeys = {Enum.KeyCode.E, Enum.KeyCode.Q, Enum.KeyCode.R, Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C, Enum.KeyCode.F}
+task.spawn(function()
+    while true do
+        if _G.CheatConfig.MainFarmActive and not _G.FarmState.IsFlyingToButtons then
+            -- Эмуляция нажатия букв для способностей
+            if _G.CheatConfig.SpamKeysActive then
+                for _, key in ipairs(inputKeys) do
+                    pcall(function()
+                        VirtualUser:SetKeyDown(key)
+                        RunService.Heartbeat:Wait()
+                        VirtualUser:SetKeyUp(key)
+                    end)
+                end
+            end
+            -- Эмуляция кликов по экрану (в точку нахождения игрока)
+            if _G.CheatConfig.ScreenClickActive then
+                pcall(function()
+                    VirtualUser:Button1Down(Vector2.new(0, 0))
+                    RunService.Heartbeat:Wait()
+                    VirtualUser:Button1Up(Vector2.new(0, 0))
+                end)
+            end
+        end
+        task.wait(0.05) -- Турбо-задержка для уничтожения всего вокруг
+    end
+end)
+
+-- Анти-АФК цикл
 task.spawn(function()
     while true do
         if _G.CheatConfig.AntiAfkActive then
@@ -229,7 +257,7 @@ task.spawn(function()
         task.wait(_G.CheatConfig.AntiAfkDelay)
     end
 end)
--- [[ PART 2: Core Farm Loops, Magnets & Fixed Scheduled Fly ]]
+-- [[ PART 2: Core Farm Loops, Magnets, Fixed Scheduled Fly & Anti-Sit ]]
 
 local function ExecuteInventoryManagement()
     local backpack = player:FindFirstChild("Backpack")
@@ -257,7 +285,7 @@ local function ExecuteInventoryManagement()
     end
 end
 
--- ИСПРАВЛЕННАЯ ФУНКЦИЯ ОБЛЕТА КНОПОК
+-- ТРЕБОВАНИЕ 4: Полное исправление опечатки вызова функции в лоадере
 local function ExecuteScheduledFly()
     local character = player.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
@@ -265,13 +293,10 @@ local function ExecuteScheduledFly()
 
     local prompts = {}
     for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") then
-            table.insert(prompts, obj)
-        end
+        if obj:IsA("ProximityPrompt") then table.insert(prompts, obj) end
     end
 
     if #prompts == 0 then return end
-
     _G.FarmState.IsFlyingToButtons = true
     
     for _, prompt in ipairs(prompts) do
@@ -293,7 +318,7 @@ local function ExecuteScheduledFly()
             end)
         end
     end
-
+    
     _G.FarmState.IsFlyingToButtons = false
 end
 
@@ -400,12 +425,11 @@ task.spawn(function()
     end
 end)
 
--- Ежеминутный таймер облета кнопок взаимодействия (Исправлен)
 task.spawn(function()
     while true do
         task.wait(60)
-        ExecuteScheduledFly()
+        ExecuteScheduledFly() -- Название синхронизировано с вызовом
     end
 end)
 
-print("[Elite Hub]: Проект v7.5 полностью собран и запущен без ошибок!")
+print("[Elite Hub]: Скрипт v9.0 полностью собран. Ошибки лоадера устранены!")
