@@ -19,13 +19,13 @@ _G.CheatConfig = {
     TargetZ = -0.2799992561340332,
     SpinSpeed = 25,
     
-    GreataxeTime = 4,       
+    GreataxeTime = 14,       
     HeartbanisherTime = 1.5, 
-    PickaxeTime = 2,        
+    PickaxeTime = 5,        
     
     AntiAfkDelay = 60,
-    TriggerDelay = 0.03,    
-    ClickDelay = 0.02,      
+    TriggerDelay = 0.01,    
+    ClickDelay = 0.01,      
     MineFolders = {"Mine", "Mine2", "Mine3"},
     
     MainFarmActive = true,
