@@ -1,5 +1,5 @@
--- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub (v10.5) ]]
--- [[ PART 1: GUI, Configuration & Core Settings ]]
+-- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub (v11.0) ]]
+-- [[ PART 1: GUI, Configuration, Anti-AFK & Core View Loops ]]
 
 if _G.CraftwarsEliteLoaded then
     local oldGui = game:GetService("CoreGui"):FindFirstChild("CraftwarsEliteGui") or game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("CraftwarsEliteGui")
@@ -80,7 +80,7 @@ MainCorner.Parent = MainFrame
 
 local Header = Instance.new("TextLabel")
 Header.Size = UDim2.new(1, 0, 0, 40)
-Header.Text = "CRAFTWARS ELITE HUB v10.5"
+Header.Text = "CRAFTWARS ELITE HUB v11.0"
 Header.TextColor3 = Color3.fromRGB(255, 255, 255)
 Header.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 Header.Font = Enum.Font.SourceSansBold
@@ -296,17 +296,23 @@ local function ExecuteInventoryManagement()
     end
 end
 
--- ВЫЗОВ СПОСОБНОСТЕЙ НАПРЯМУЮ ЧЕРЕЗ СЕТЕВЫЕ ПАКЕТЫ ИГРЫ
+-- ТОТ САМЫЙ ПЕРВЫЙ МЕТОД: ПОЛНЫЙ ОБХОД ЗАЩИТЫ ЧЕРЕЗ СЕТЕВЫЕ ПАКЕТЫ ПРЕДМЕТОВ
 local function FireHeartbanisherHeartbleed(tool)
-    -- Сканируем внутренности меча на наличие скрытых сетевых папок скрипта
     for _, item in ipairs(tool:GetDescendants()) do
         if item:IsA("RemoteEvent") then
-            pcall(function() item:FireServer("Heartbleed") item:FireServer("X") item:FireServer() end)
+            pcall(function() 
+                item:FireServer("Heartbleed") 
+                item:FireServer("X") 
+                item:FireServer() 
+            end)
         elseif item:IsA("RemoteFunction") then
-            pcall(function() item:InvokeServer("Heartbleed") item:InvokeServer("X") item:InvokeServer() end)
+            pcall(function() 
+                item:InvokeServer("Heartbleed") 
+                item:InvokeServer("X") 
+                item:InvokeServer() 
+            end)
         end
     end
-    -- Запасной метод: поиск локального модуля анимации способностей в мече
     local event = tool:FindFirstChild("Heartbleed") or tool:FindFirstChild("Ability") or tool:FindFirstChild("Remote")
     if event and event:IsA("RemoteEvent") then
         pcall(function() event:FireServer() end)
@@ -363,6 +369,7 @@ local function ProcessWorldTriggers()
         end
     end
 
+    -- ТОТ САМЫЙ ПЕРВЫЙ МЕТОД АКТИВАЦИИ ВСЕХ ПРЕДМЕТОВ И СПОСОБНОСТЕЙ ОДНОВРЕМЕННО
     if _G.CheatConfig.AutoClickTools then
         local tool = character:FindFirstChildOfClass("Tool")
         if tool then 
@@ -373,7 +380,7 @@ local function ProcessWorldTriggers()
         end
     end
 
-    -- ЖЕСТКАЯ СТАБИЛИЗАЦИЯ И ЗАКРЕПЛЕНИЕ РУД ПОД ИГРОКОМ
+    -- НАДЕЖНОЕ ЗАКРЕПЛЕНИЕ РУДЫ ПОД НОГАМИ
     if _G.CheatConfig.MagnetOres then
         for _, mineName in ipairs(_G.CheatConfig.MineFolders) do
             local mineFolder = Workspace:FindFirstChild(mineName)
@@ -394,12 +401,11 @@ local function ProcessWorldTriggers()
                             local orePart = child:FindFirstChildOfClass("Part") or child:FindFirstChildOfClass("MeshPart") or child:FindFirstChild("Ore") or child.PrimaryPart
                             if orePart then
                                 pcall(function()
-                                    -- ИСПРАВЛЕНО: Делаем руду твердой и фиксируем в воздухе, чтобы она не падала под карту
+                                    -- Жесткая фиксация в пространстве, чтобы руда не улетала вниз
                                     orePart.CanCollide = true
                                     orePart.Anchored = true 
                                     orePart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                                     orePart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-                                    -- Спавним руду ровно на 3 стада ниже ног, образуя твердый пол
                                     orePart.CFrame = rootPart.CFrame * CFrame.new(0, -3, 0)
                                 end)
                             end
@@ -484,4 +490,4 @@ task.spawn(function()
     end
 end)
 
-print("[Elite Hub v10.5]: Новая физика CanCollide руды и удаленный вызов способностей активированы!")
+print("[Elite Hub v11.0]: Оригинальный метод активаций и каста способностей восстановлен!")
