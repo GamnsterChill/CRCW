@@ -1,5 +1,5 @@
--- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub (v9.0) ]]
--- [[ PART 1: GUI, Configuration, Custom Input Спамер (Keys & Clicks) ]]
+-- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub (v10.0) ]]
+-- [[ PART 1: GUI, Configuration, Custom Timers & Click Settings ]]
 
 if _G.CraftwarsEliteLoaded then
     local oldGui = game:GetService("CoreGui"):FindFirstChild("CraftwarsEliteGui") or game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("CraftwarsEliteGui")
@@ -18,10 +18,15 @@ _G.CheatConfig = {
     TargetY = 6.0255889892578125 - 5,
     TargetZ = -0.2799992561340332,
     SpinSpeed = 25,
-    WeaponTime = 5,
-    PickaxeTime = 2,
+    
+    -- НАСТРОЙКИ ТАЙМЕРОВ ТРЕХ ПРЕДМЕТОВ
+    GreataxeTime = 4,       
+    HeartbanisherTime = 1.5, 
+    PickaxeTime = 2,        
+    
     AntiAfkDelay = 60,
-    TriggerDelay = 0.1,
+    TriggerDelay = 0.05,    
+    ClickDelay = 0.03,      
     MineFolders = {"Mine", "Mine2", "Mine3"},
     
     MainFarmActive = true,
@@ -32,12 +37,12 @@ _G.CheatConfig = {
     AutoClickPrompts = true,
     AntiAfkActive = true,
     AntiSitActive = true,
-    SpamKeysActive = true,   -- Включение спама букв способностей
-    ScreenClickActive = true -- Включение кликов по экрану
+    SpamKeysActive = true,   
+    ScreenClickActive = true 
 }
 
 _G.FarmState = {
-    ForcePickaxe = false,
+    CurrentPhase = "Greataxe", 
     LastMode = nil,
     IsFlyingToButtons = false
 }
@@ -47,10 +52,9 @@ ScreenGui.Name = "CraftwarsEliteGui"
 pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
 if not ScreenGui.Parent then ScreenGui.Parent = player:WaitForChild("PlayerGui") end
 
--- ТРЕБОВАНИЕ 1: Кнопка перенесена выше (Position Y = 0)
 local ToggleMenuBtn = Instance.new("TextButton")
 ToggleMenuBtn.Size = UDim2.new(0, 160, 0, 32)
-ToggleMenuBtn.Position = UDim2.new(0.5, -80, 0, 0) -- В самом верху экрана
+ToggleMenuBtn.Position = UDim2.new(0.5, -80, 0, 0) 
 ToggleMenuBtn.Text = "🔴 СКРЫТЬ МЕНЮ"
 ToggleMenuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
@@ -77,7 +81,7 @@ MainCorner.Parent = MainFrame
 
 local Header = Instance.new("TextLabel")
 Header.Size = UDim2.new(1, 0, 0, 40)
-Header.Text = "CRAFTWARS ELITE HUB v9.0"
+Header.Text = "CRAFTWARS ELITE HUB v10.0"
 Header.TextColor3 = Color3.fromRGB(255, 255, 255)
 Header.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 Header.Font = Enum.Font.SourceSansBold
@@ -103,7 +107,7 @@ local ScrollPage = Instance.new("ScrollingFrame")
 ScrollPage.Size = UDim2.new(1, -20, 1, -50)
 ScrollPage.Position = UDim2.new(0, 10, 0, 45)
 ScrollPage.BackgroundTransparency = 1
-ScrollPage.CanvasSize = UDim2.new(0, 0, 0, 700)
+ScrollPage.CanvasSize = UDim2.new(0, 0, 0, 800)
 ScrollPage.ScrollBarThickness = 6
 ScrollPage.Parent = MainFrame
 
@@ -208,21 +212,21 @@ CreateToggle("Высокоскоростной спам букв (E,Q,R,Z,X,C,F)
 CreateToggle("Автоматический клик по экрану", "ScreenClickActive")
 CreateToggle("Анти-АФК защита", "AntiAfkActive")
 
+CreateInput("Время удержания Greataxe (сек)", "GreataxeTime", true)
+CreateInput("Время удержания Heartbanisher (сек)", "HeartbanisherTime", true)
+CreateInput("Время удержания Кирки (сек)", "PickaxeTime", true)
+CreateInput("Задержка автокликов экрана (сек)", "ClickDelay", true)
+CreateInput("Задержка магнита/триггеров (сек)", "TriggerDelay", true)
 CreateInput("Скорость вращения персонажа", "SpinSpeed", true)
-CreateInput("Время удержания оружия (сек)", "WeaponTime", true)
-CreateInput("Время удержания кирки (сек)", "PickaxeTime", true)
-CreateInput("Скорость кликов/магнита (сек)", "TriggerDelay", true)
 CreateInput("Интервал Анти-АФК кликов (сек)", "AntiAfkDelay", true)
 CreateInput("Координата позиции X", "TargetX", true)
 CreateInput("Координата позиции Y (Высота)", "TargetY", true)
 CreateInput("Координата позиции Z", "TargetZ", true)
 
--- ТРЕБОВАНИЕ 2 И 3: Высокоскоростной поток эмуляции ввода (Клавиши + Клики экрана)
 local inputKeys = {Enum.KeyCode.E, Enum.KeyCode.Q, Enum.KeyCode.R, Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C, Enum.KeyCode.F}
 task.spawn(function()
     while true do
         if _G.CheatConfig.MainFarmActive and not _G.FarmState.IsFlyingToButtons then
-            -- Эмуляция нажатия букв для способностей
             if _G.CheatConfig.SpamKeysActive then
                 for _, key in ipairs(inputKeys) do
                     pcall(function()
@@ -232,20 +236,18 @@ task.spawn(function()
                     end)
                 end
             end
-            -- Эмуляция кликов по экрану (в точку нахождения игрока)
             if _G.CheatConfig.ScreenClickActive then
                 pcall(function()
-                    VirtualUser:Button1Down(Vector2.new(0, 0))
+                    VirtualUser:Button1Down(Vector2.new(100, 100))
                     RunService.Heartbeat:Wait()
-                    VirtualUser:Button1Up(Vector2.new(0, 0))
+                    VirtualUser:Button1Up(Vector2.new(100, 100))
                 end)
             end
         end
-        task.wait(0.05) -- Турбо-задержка для уничтожения всего вокруг
+        task.wait(_G.CheatConfig.ClickDelay) 
     end
 end)
 
--- Анти-АФК цикл
 task.spawn(function()
     while true do
         if _G.CheatConfig.AntiAfkActive then
@@ -257,35 +259,36 @@ task.spawn(function()
         task.wait(_G.CheatConfig.AntiAfkDelay)
     end
 end)
--- [[ PART 2: Core Farm Loops, Magnets, Fixed Scheduled Fly & Anti-Sit ]]
+-- [[ PART 2: 3-Phase Inventory Management, Ore/Mob Magnets & World Loops ]]
 
 local function ExecuteInventoryManagement()
     local backpack = player:FindFirstChild("Backpack")
     local character = player.Character
     if not backpack or not character then return end
 
-    if _G.FarmState.ForcePickaxe and _G.FarmState.LastMode ~= "pickaxe" then
-        local pickaxe = backpack:FindFirstChild("Ultimate Pickaxe")
-        if pickaxe then
-            _G.FarmState.LastMode = "pickaxe"
-            pickaxe.Parent = character
-        end
-    elseif not _G.FarmState.ForcePickaxe and _G.FarmState.LastMode ~= "weapon" then
-        local currentTool = character:FindFirstChildOfClass("Tool")
-        if not currentTool or currentTool.Name == "Ultimate Pickaxe" then
-            for _, item in ipairs(backpack:GetChildren()) do
-                if item:IsA("Tool") and item.Name ~= "Ultimate Pickaxe" then
-                    _G.FarmState.LastMode = "weapon"
-                    if currentTool then currentTool.Parent = backpack end
-                    item.Parent = character
-                    break
-                end
+    local currentTool = character:FindFirstChildOfClass("Tool")
+    local targetToolName = nil
+
+    if _G.FarmState.CurrentPhase == "Greataxe" then
+        targetToolName = "Greataxe of Love"
+    elseif _G.FarmState.CurrentPhase == "Heartbanisher" then
+        targetToolName = "Heartbanisher"
+    elseif _G.FarmState.CurrentPhase == "Pickaxe" then
+        targetToolName = "Ultimate Pickaxe"
+    end
+
+    if targetToolName and _G.FarmState.LastMode ~= targetToolName then
+        if not currentTool or currentTool.Name ~= targetToolName then
+            local targetTool = backpack:FindFirstChild(targetToolName)
+            if targetTool then
+                _G.FarmState.LastMode = targetToolName
+                if currentTool then currentTool.Parent = backpack end 
+                targetTool.Parent = character 
             end
         end
     end
 end
 
--- ТРЕБОВАНИЕ 4: Полное исправление опечатки вызова функции в лоадере
 local function ExecuteScheduledFly()
     local character = player.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
@@ -305,7 +308,7 @@ local function ExecuteScheduledFly()
                 local parentPart = prompt.Parent:IsA("BasePart") and prompt.Parent or prompt.Parent:FindFirstChildOfClass("BasePart")
                 if parentPart then
                     rootPart.CFrame = parentPart.CFrame * CFrame.new(0, 2, 0)
-                    task.wait(0.15)
+                    task.wait(0.2)
                     if fireproximityprompt then 
                         fireproximityprompt(prompt) 
                     else
@@ -318,7 +321,6 @@ local function ExecuteScheduledFly()
             end)
         end
     end
-    
     _G.FarmState.IsFlyingToButtons = false
 end
 
@@ -327,13 +329,12 @@ local function ProcessWorldTriggers()
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
     local rootPart = character.HumanoidRootPart
 
-    -- Модуль автоматического вставания со стульев/транспорта
     if _G.CheatConfig.AntiSitActive then
         local humanoid = character:FindFirstChildOfClass("Humanoid")
         if humanoid and humanoid.Sit then
             pcall(function()
                 humanoid.Sit = false
-                rootPart.CFrame = rootPart.CFrame * CFrame.new(0, 4, 0)
+                rootPart.CFrame = rootPart.CFrame * CFrame.new(0, 5, 0) 
             end)
         end
     end
@@ -411,10 +412,14 @@ end)
 
 task.spawn(function()
     while true do
-        task.wait(_G.CheatConfig.WeaponTime)
-        _G.FarmState.ForcePickaxe = true
+        _G.FarmState.CurrentPhase = "Greataxe"
+        task.wait(_G.CheatConfig.GreataxeTime)
+        
+        _G.FarmState.CurrentPhase = "Heartbanisher"
+        task.wait(_G.CheatConfig.HeartbanisherTime)
+        
+        _G.FarmState.CurrentPhase = "Pickaxe"
         task.wait(_G.CheatConfig.PickaxeTime)
-        _G.FarmState.ForcePickaxe = false
     end
 end)
 
@@ -428,8 +433,8 @@ end)
 task.spawn(function()
     while true do
         task.wait(60)
-        ExecuteScheduledFly() -- Название синхронизировано с вызовом
+        ExecuteScheduledFly() 
     end
 end)
 
-print("[Elite Hub]: Скрипт v9.0 полностью собран. Ошибки лоадера устранены!")
+print("[Elite Hub v10.0]: Проект v10.0 полностью собран на GitHub!")
