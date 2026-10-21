@@ -1,5 +1,5 @@
--- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub (v11.0) ]]
--- [[ PART 1: GUI, Configuration, Anti-AFK & Core View Loops ]]
+-- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub (v12.0) ]]
+-- [[ PART 1: GUI, Configuration, Anti-AFK & Core Input Loops ]]
 
 if _G.CraftwarsEliteLoaded then
     local oldGui = game:GetService("CoreGui"):FindFirstChild("CraftwarsEliteGui") or game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("CraftwarsEliteGui")
@@ -24,8 +24,8 @@ _G.CheatConfig = {
     PickaxeTime = 2,        
     
     AntiAfkDelay = 60,
-    TriggerDelay = 0.05,    
-    ClickDelay = 0.03,      
+    TriggerDelay = 0.03,    
+    ClickDelay = 0.02,      
     MineFolders = {"Mine", "Mine2", "Mine3"},
     
     MainFarmActive = true,
@@ -80,7 +80,7 @@ MainCorner.Parent = MainFrame
 
 local Header = Instance.new("TextLabel")
 Header.Size = UDim2.new(1, 0, 0, 40)
-Header.Text = "CRAFTWARS ELITE HUB v11.0"
+Header.Text = "CRAFTWARS ELITE HUB v12.0"
 Header.TextColor3 = Color3.fromRGB(255, 255, 255)
 Header.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 Header.Font = Enum.Font.SourceSansBold
@@ -296,25 +296,29 @@ local function ExecuteInventoryManagement()
     end
 end
 
--- ИСПРАВЛЕННЫЙ МЕТОД: Глобальный перехват и спам удаленных серверных событий
+-- ОБНОВЛЕННЫЙ ВЫЗОВ СПОСОБНОСТЕЙ: Прямой спам по всем каналам связи меча
 local function FireHeartbanisherHeartbleed(tool)
-    -- 1. Атака через внутренние триггеры оружия
+    -- 1. Вызов по всем дочерним эвентам
     for _, item in ipairs(tool:GetDescendants()) do
         if item:IsA("RemoteEvent") then
             pcall(function() 
                 item:FireServer("Heartbleed") 
+                item:FireServer("Cast") 
+                item:FireServer("Use") 
                 item:FireServer("X") 
                 item:FireServer() 
             end)
         end
     end
-    -- 2. Обход защиты: вызов способности напрямую через глобальный игровой сервис репликаций
+    -- 2. Прямой стук в глобальные игровые папки репликации
     pcall(function()
-        local reps = game:GetService("ReplicatedStorage")
-        if reps:FindFirstChild("Remotes") then
-            reps.Remotes:FindFirstChild("Heartbleed"):FireServer()
-        elseif reps:FindFirstChild("Heartbleed") then
-            reps.Heartbleed:FireServer()
+        local storage = game:GetService("ReplicatedStorage")
+        local names = {"Heartbleed", "HeartBleed", "Cast", "Skill", "Use", "Ability"}
+        for _, n in ipairs(names) do
+            if storage:FindFirstChild(n) then storage[n]:FireServer() end
+            if storage:FindFirstChild("Remotes") and storage.Remotes:FindFirstChild(n) then
+                storage.Remotes[n]:FireServer()
+            end
         end
     end)
 end
@@ -379,7 +383,7 @@ local function ProcessWorldTriggers()
         end
     end
 
-    -- ИСПРАВЛЕННЫЙ МОДУЛЬ ЖЕСТКОЙ СТАБИЛИЗАЦИИ РУДЫ (CanCollide + Зануление скорости каждые 0.03 сек)
+    -- МОДЕРНИЗИРОВАННЫЙ МОДУЛЬ РУДЫ: СПАВН ПОВЫШЕ (На уровне рук/пояса)
     if _G.CheatConfig.MagnetOres then
         for _, mineName in ipairs(_G.CheatConfig.MineFolders) do
             local mineFolder = Workspace:FindFirstChild(mineName)
@@ -400,13 +404,12 @@ local function ProcessWorldTriggers()
                             local orePart = child:FindFirstChildOfClass("Part") or child:FindFirstChildOfClass("MeshPart") or child:FindFirstChild("Ore") or child.PrimaryPart
                             if orePart then
                                 pcall(function()
-                                    -- Полное отключение физического падения руды под карту
                                     orePart.CanCollide = true
                                     orePart.Anchored = true 
                                     orePart.Velocity = Vector3.new(0, 0, 0)
                                     orePart.RotVelocity = Vector3.new(0, 0, 0)
-                                    -- Телепортация строго под ноги игроку (на 3 стада ниже)
-                                    orePart.CFrame = rootPart.CFrame * CFrame.new(0, -3, 0)
+                                    -- ТРЕБОВАНИЕ: Спавн руды выше! Теперь руда летит прямо к рукам/поясу перед лицом
+                                    orePart.CFrame = rootPart.CFrame * CFrame.new(0, 0, -2)
                                 end)
                             end
                         end
@@ -490,4 +493,4 @@ task.spawn(function()
     end
 end)
 
-print("[Elite Hub v11.5]: Стабилизация руды зафиксирована, сетевой обход каста способностей активен!")
+print("[Elite Hub v12.0]: Позиция руд поднята, точечные эвенты способностей перехвачены!")
