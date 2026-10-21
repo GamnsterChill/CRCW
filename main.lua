@@ -1,4 +1,6 @@
--- [[ ЧАСТЬ 1: ИНТЕРФЕЙС И НАСТРОЙКИ ]]
+-- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub (v11.0) ]]
+-- [[ PART 1: GUI, Configuration, Anti-AFK & Core View Loops ]]
+
 if _G.CraftwarsEliteLoaded then
     local oldGui = game:GetService("CoreGui"):FindFirstChild("CraftwarsEliteGui") or game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("CraftwarsEliteGui")
     if oldGui then oldGui:Destroy() end
@@ -6,7 +8,9 @@ end
 _G.CraftwarsEliteLoaded = true
 
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
+local Workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
 
 _G.CheatConfig = {
@@ -14,13 +18,16 @@ _G.CheatConfig = {
     TargetY = 6.0255889892578125 - 5,
     TargetZ = -0.2799992561340332,
     SpinSpeed = 25,
+    
     GreataxeTime = 4,       
     HeartbanisherTime = 1.5, 
     PickaxeTime = 2,        
+    
     AntiAfkDelay = 60,
     TriggerDelay = 0.05,    
     ClickDelay = 0.03,      
     MineFolders = {"Mine", "Mine2", "Mine3"},
+    
     MainFarmActive = true,
     SpinActive = true,
     MagnetOres = true,
@@ -73,7 +80,7 @@ MainCorner.Parent = MainFrame
 
 local Header = Instance.new("TextLabel")
 Header.Size = UDim2.new(1, 0, 0, 40)
-Header.Text = "CRAFTWARS ELITE HUB v11.5"
+Header.Text = "CRAFTWARS ELITE HUB v11.0"
 Header.TextColor3 = Color3.fromRGB(255, 255, 255)
 Header.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 Header.Font = Enum.Font.SourceSansBold
@@ -86,8 +93,13 @@ HeaderCorner.Parent = Header
 
 ToggleMenuBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
-    ToggleMenuBtn.Text = MainFrame.Visible and "🔴 СКРЫТЬ МЕНЮ" or "🟢 ОТКРЫТЬ МЕНЮ"
-    ToggleMenuBtn.BackgroundColor3 = MainFrame.Visible and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(0, 140, 0)
+    if MainFrame.Visible then
+        ToggleMenuBtn.Text = "🔴 СКРЫТЬ МЕНЮ"
+        ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    else
+        ToggleMenuBtn.Text = "🟢 ОТКРЫТЬ МЕНЮ"
+        ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 0)
+    end
 end)
 
 local ScrollPage = Instance.new("ScrollingFrame")
@@ -215,7 +227,7 @@ task.spawn(function()
                 for _, key in ipairs(inputKeys) do
                     pcall(function()
                         VirtualUser:SetKeyDown(key)
-                        task.wait(0.01)
+                        RunService.Heartbeat:Wait()
                         VirtualUser:SetKeyUp(key)
                     end)
                 end
@@ -223,7 +235,7 @@ task.spawn(function()
             if _G.CheatConfig.ScreenClickActive then
                 pcall(function()
                     VirtualUser:Button1Down(Vector2.new(100, 100))
-                    task.wait(0.01)
+                    RunService.Heartbeat:Wait()
                     VirtualUser:Button1Up(Vector2.new(100, 100))
                 end)
             end
@@ -243,12 +255,7 @@ task.spawn(function()
         task.wait(_G.CheatConfig.AntiAfkDelay)
     end
 end)
-print("[Elite Hub]: Часть 1 успешно загружена.")
--- [[ ЧАСТЬ 2: ФАРМ-ЛОГИКА И МАГНИТЫ ]]
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
-local player = Players.LocalPlayer
+-- [[ PART 2: Core Farm Loops, Ultra-Comprehensive Ore Magnet & World Loops ]]
 
 local ComprehensiveOresList = {
     "Iron", "Gold", "Diamond", "Bluesteel", "Amberstone", "Crystal", 
@@ -264,7 +271,7 @@ local ComprehensiveOresList = {
 local function ExecuteInventoryManagement()
     local backpack = player:FindFirstChild("Backpack")
     local character = player.Character
-    if not backpack or not character or not character:FindFirstChild("Humanoid") or character.Humanoid.Health <= 0 then return end
+    if not backpack or not character then return end
 
     local currentTool = character:FindFirstChildOfClass("Tool")
     local targetToolName = nil
@@ -278,16 +285,20 @@ local function ExecuteInventoryManagement()
     end
 
     if targetToolName and _G.FarmState.LastMode ~= targetToolName then
-        local targetTool = backpack:FindFirstChild(targetToolName) or character:FindFirstChild(targetToolName)
-        if targetTool and targetTool.Parent ~= character then
-            _G.FarmState.LastMode = targetToolName
-            if currentTool then currentTool.Parent = backpack end 
-            targetTool.Parent = character 
+        if not currentTool or currentTool.Name ~= targetToolName then
+            local targetTool = backpack:FindFirstChild(targetToolName)
+            if targetTool then
+                _G.FarmState.LastMode = targetToolName
+                if currentTool then currentTool.Parent = backpack end 
+                targetTool.Parent = character 
+            end
         end
     end
 end
 
+-- ИСПРАВЛЕННЫЙ МЕТОД: Глобальный перехват и спам удаленных серверных событий
 local function FireHeartbanisherHeartbleed(tool)
+    -- 1. Атака через внутренние триггеры оружия
     for _, item in ipairs(tool:GetDescendants()) do
         if item:IsA("RemoteEvent") then
             pcall(function() 
@@ -297,6 +308,15 @@ local function FireHeartbanisherHeartbleed(tool)
             end)
         end
     end
+    -- 2. Обход защиты: вызов способности напрямую через глобальный игровой сервис репликаций
+    pcall(function()
+        local reps = game:GetService("ReplicatedStorage")
+        if reps:FindFirstChild("Remotes") then
+            reps.Remotes:FindFirstChild("Heartbleed"):FireServer()
+        elseif reps:FindFirstChild("Heartbleed") then
+            reps.Heartbleed:FireServer()
+        end
+    end)
 end
 
 local function ExecuteScheduledFly()
@@ -353,31 +373,42 @@ local function ProcessWorldTriggers()
         local tool = character:FindFirstChildOfClass("Tool")
         if tool then 
             pcall(function() tool:Activate() end)
-            if tool.Name == "Heartbanisher" then FireHeartbanisherHeartbleed(tool) end
+            if tool.Name == "Heartbanisher" then
+                FireHeartbanisherHeartbleed(tool)
+            end
         end
     end
 
+    -- ИСПРАВЛЕННЫЙ МОДУЛЬ ЖЕСТКОЙ СТАБИЛИЗАЦИИ РУДЫ (CanCollide + Зануление скорости каждые 0.03 сек)
     if _G.CheatConfig.MagnetOres then
         for _, mineName in ipairs(_G.CheatConfig.MineFolders) do
             local mineFolder = Workspace:FindFirstChild(mineName)
             if mineFolder then
-                for _, child in ipairs(mineFolder:GetChildren()) do
-                    local isTargetOre = false
-                    local lowerName = string.lower(child.Name)
-                    for _, oreName in ipairs(ComprehensiveOresList) do
-                        if string.find(lowerName, string.lower(oreName)) then
-                            isTargetOre = true
-                            break
+                for _, child in ipairs(mineFolder:GetDescendants()) do
+                    if child:IsA("Model") then
+                        local isTargetOre = false
+                        for _, oreName in ipairs(ComprehensiveOresList) do
+                            if string.find(string.lower(child.Name), string.lower(oreName)) then
+                                isTargetOre = true
+                                break
+                            end
                         end
-                    end
-                    if isTargetOre or string.find(lowerName, "ore") or string.find(lowerName, "block") then
-                        local orePart = child:IsA("BasePart") and child or child:FindFirstChildOfClass("BasePart") or child.PrimaryPart
-                        if orePart then
-                            pcall(function()
-                                orePart.CanCollide = true
-                                orePart.Anchored = true 
-                                orePart.CFrame = rootPart.CFrame * CFrame.new(0, -3, 0)
-                            end)
+                        if child:FindFirstChild("Ore") or child:FindFirstChild("Block") or string.find(string.lower(child.Name), "ore") then
+                            isTargetOre = true
+                        end
+                        if isTargetOre then
+                            local orePart = child:FindFirstChildOfClass("Part") or child:FindFirstChildOfClass("MeshPart") or child:FindFirstChild("Ore") or child.PrimaryPart
+                            if orePart then
+                                pcall(function()
+                                    -- Полное отключение физического падения руды под карту
+                                    orePart.CanCollide = true
+                                    orePart.Anchored = true 
+                                    orePart.Velocity = Vector3.new(0, 0, 0)
+                                    orePart.RotVelocity = Vector3.new(0, 0, 0)
+                                    -- Телепортация строго под ноги игроку (на 3 стада ниже)
+                                    orePart.CFrame = rootPart.CFrame * CFrame.new(0, -3, 0)
+                                end)
+                            end
                         end
                     end
                 end
@@ -391,7 +422,9 @@ local function ProcessWorldTriggers()
                 local mobRoot = obj:FindFirstChild("HumanoidRootPart")
                 local mobHumanoid = obj:FindFirstChildOfClass("Humanoid")
                 if mobRoot and mobHumanoid and mobHumanoid.Health > 0 then
-                    pcall(function() mobRoot.CFrame = rootPart.CFrame * CFrame.new(0, 0, -4) end)
+                    pcall(function()
+                        mobRoot.CFrame = rootPart.CFrame * CFrame.new(0, 0, -4)
+                    end)
                 end
             end
         end
@@ -401,7 +434,7 @@ local function ProcessWorldTriggers()
         for _, obj in ipairs(Workspace:GetDescendants()) do
             if obj:IsA("ProximityPrompt") then
                 pcall(function()
-                    if fireproximityprompt then fireproximityprompt(obj) else obj:InputHoldBegin() obj:InputHoldEnd() end
+                    if fireproximityprompt then fireproximityprompt(obj) else obj:DoNow() end
                 end)
             end
         end
@@ -414,7 +447,7 @@ RunService.Heartbeat:Connect(function()
         if character and character:FindFirstChild("HumanoidRootPart") then
             local currentCFrame = CFrame.new(_G.CheatConfig.TargetX, _G.CheatConfig.TargetY, _G.CheatConfig.TargetZ)
             if _G.CheatConfig.SpinActive then
-                character.HumanoidRootPart.CFrame = currentCFrame * CFrame.Angles(0, math.rad(tick() * _G.CheatConfig.SpinSpeed * 10) % 360, 0)
+                character.HumanoidRootPart.CFrame = currentCFrame * CFrame.Angles(0, math.rad(tick() * _G.CheatConfig.SpinSpeed * 100) % 360, 0)
             else
                 character.HumanoidRootPart.CFrame = currentCFrame
             end
@@ -434,8 +467,10 @@ task.spawn(function()
     while true do
         _G.FarmState.CurrentPhase = "Greataxe"
         task.wait(_G.CheatConfig.GreataxeTime)
+        
         _G.FarmState.CurrentPhase = "Heartbanisher"
         task.wait(_G.CheatConfig.HeartbanisherTime)
+        
         _G.FarmState.CurrentPhase = "Pickaxe"
         task.wait(_G.CheatConfig.PickaxeTime)
     end
@@ -454,4 +489,5 @@ task.spawn(function()
         ExecuteScheduledFly() 
     end
 end)
-print("[Elite Hub]: Часть 2 успешно загружена. Полный цикл фармера запущен!")
+
+print("[Elite Hub v11.5]: Стабилизация руды зафиксирована, сетевой обход каста способностей активен!")
