@@ -1,5 +1,5 @@
--- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub (v10.0) ]]
--- [[ PART 1: GUI, Configuration, Custom Timers & Click Settings ]]
+-- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub (v10.5) ]]
+-- [[ PART 1: GUI, Configuration & Core Settings ]]
 
 if _G.CraftwarsEliteLoaded then
     local oldGui = game:GetService("CoreGui"):FindFirstChild("CraftwarsEliteGui") or game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("CraftwarsEliteGui")
@@ -80,7 +80,7 @@ MainCorner.Parent = MainFrame
 
 local Header = Instance.new("TextLabel")
 Header.Size = UDim2.new(1, 0, 0, 40)
-Header.Text = "CRAFTWARS ELITE HUB v10.0"
+Header.Text = "CRAFTWARS ELITE HUB v10.5"
 Header.TextColor3 = Color3.fromRGB(255, 255, 255)
 Header.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 Header.Font = Enum.Font.SourceSansBold
@@ -218,9 +218,6 @@ CreateInput("Задержка автокликов экрана (сек)", "Clic
 CreateInput("Задержка магнита/триггеров (сек)", "TriggerDelay", true)
 CreateInput("Скорость вращения персонажа", "SpinSpeed", true)
 CreateInput("Интервал Анти-АФК кликов (сек)", "AntiAfkDelay", true)
-CreateInput("Координата позиции X", "TargetX", true)
-CreateInput("Координата позиции Y (Высота)", "TargetY", true)
-CreateInput("Координата позиции Z", "TargetZ", true)
 
 local inputKeys = {Enum.KeyCode.E, Enum.KeyCode.Q, Enum.KeyCode.R, Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C, Enum.KeyCode.F}
 task.spawn(function()
@@ -299,6 +296,23 @@ local function ExecuteInventoryManagement()
     end
 end
 
+-- ВЫЗОВ СПОСОБНОСТЕЙ НАПРЯМУЮ ЧЕРЕЗ СЕТЕВЫЕ ПАКЕТЫ ИГРЫ
+local function FireHeartbanisherHeartbleed(tool)
+    -- Сканируем внутренности меча на наличие скрытых сетевых папок скрипта
+    for _, item in ipairs(tool:GetDescendants()) do
+        if item:IsA("RemoteEvent") then
+            pcall(function() item:FireServer("Heartbleed") item:FireServer("X") item:FireServer() end)
+        elseif item:IsA("RemoteFunction") then
+            pcall(function() item:InvokeServer("Heartbleed") item:InvokeServer("X") item:InvokeServer() end)
+        end
+    end
+    -- Запасной метод: поиск локального модуля анимации способностей в мече
+    local event = tool:FindFirstChild("Heartbleed") or tool:FindFirstChild("Ability") or tool:FindFirstChild("Remote")
+    if event and event:IsA("RemoteEvent") then
+        pcall(function() event:FireServer() end)
+    end
+end
+
 local function ExecuteScheduledFly()
     local character = player.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
@@ -351,9 +365,15 @@ local function ProcessWorldTriggers()
 
     if _G.CheatConfig.AutoClickTools then
         local tool = character:FindFirstChildOfClass("Tool")
-        if tool then pcall(function() tool:Activate() end) end
+        if tool then 
+            pcall(function() tool:Activate() end)
+            if tool.Name == "Heartbanisher" then
+                FireHeartbanisherHeartbleed(tool) -- Турбо каст ауры Х
+            end
+        end
     end
 
+    -- ЖЕСТКАЯ СТАБИЛИЗАЦИЯ И ЗАКРЕПЛЕНИЕ РУД ПОД ИГРОКОМ
     if _G.CheatConfig.MagnetOres then
         for _, mineName in ipairs(_G.CheatConfig.MineFolders) do
             local mineFolder = Workspace:FindFirstChild(mineName)
@@ -374,7 +394,12 @@ local function ProcessWorldTriggers()
                             local orePart = child:FindFirstChildOfClass("Part") or child:FindFirstChildOfClass("MeshPart") or child:FindFirstChild("Ore") or child.PrimaryPart
                             if orePart then
                                 pcall(function()
+                                    -- ИСПРАВЛЕНО: Делаем руду твердой и фиксируем в воздухе, чтобы она не падала под карту
+                                    orePart.CanCollide = true
+                                    orePart.Anchored = true 
                                     orePart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                                    orePart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                                    -- Спавним руду ровно на 3 стада ниже ног, образуя твердый пол
                                     orePart.CFrame = rootPart.CFrame * CFrame.new(0, -3, 0)
                                 end)
                             end
@@ -459,4 +484,4 @@ task.spawn(function()
     end
 end)
 
-print("[Elite Hub v10.0]: Все руды из Википедии добавлены. Скрипт полностью готов!")
+print("[Elite Hub v10.5]: Новая физика CanCollide руды и удаленный вызов способностей активированы!")
