@@ -377,7 +377,7 @@ local function ProcessWorldTriggers()
     end
 
     if _G.CheatConfig.AutoClickPrompts and not _G.FarmState.IsFlyingToButtons then
-        for _, o in ipairs(Workspace:GetDescendants()) do if o:IsA("ProximityPrompt") then pcall(function() if fireproximityprompt then fireproximityprompt(o) else o:DoNow() end) end end
+        for _, o in ipairs(Workspace:GetDescendants()) do if o:IsA("ProximityPrompt") then pcall(function() if fireproximityprompt then fireproximityprompt(o) else o:InputHoldBegin() task.wait(0.01) o:InputHoldEnd() end
     end
 end
 
