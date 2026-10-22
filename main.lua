@@ -1,5 +1,5 @@
--- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub (v14.0) ]]
--- [[ PART 1: GUI, Configuration, Anti-AFK & Core Screen Spammers ]]
+-- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub (v15.5) ]]
+-- [[ PART 1: GUI, Configuration, Smart Input Spammers & Anti-AFK ]]
 
 if _G.CraftwarsEliteLoaded then
     local oldGui = game:GetService("CoreGui"):FindFirstChild("CraftwarsEliteGui") or game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("CraftwarsEliteGui")
@@ -23,6 +23,8 @@ _G.CheatConfig = {
     HeartbanisherTime = 1.5, 
     PickaxeTime = 5,        
     
+    MainFallbackTool = "Greataxe of Love",
+    
     AntiAfkDelay = 60,
     TriggerDelay = 0.01,    
     ClickDelay = 0.01,      
@@ -41,9 +43,15 @@ _G.CheatConfig = {
 }
 
 _G.FarmState = {
-    CurrentPhase = "Greataxe", 
+    CurrentPhaseIndex = 1,
     LastMode = nil,
     IsFlyingToButtons = false
+}
+
+_G.CustomRotationSequence = {
+    {Name = "Greataxe of Love", DurationKey = "GreataxeTime"},
+    {Name = "Heartbanisher", DurationKey = "HeartbanisherTime"},
+    {Name = "Ultimate Pickaxe", DurationKey = "PickaxeTime"}
 }
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -80,7 +88,7 @@ MainCorner.Parent = MainFrame
 
 local Header = Instance.new("TextLabel")
 Header.Size = UDim2.new(1, 0, 0, 40)
-Header.Text = "CRAFTWARS ELITE HUB v14.0"
+Header.Text = "CRAFTWARS ELITE HUB v15.5"
 Header.TextColor3 = Color3.fromRGB(255, 255, 255)
 Header.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 Header.Font = Enum.Font.SourceSansBold
@@ -106,7 +114,7 @@ local ScrollPage = Instance.new("ScrollingFrame")
 ScrollPage.Size = UDim2.new(1, -20, 1, -50)
 ScrollPage.Position = UDim2.new(0, 10, 0, 45)
 ScrollPage.BackgroundTransparency = 1
-ScrollPage.CanvasSize = UDim2.new(0, 0, 0, 800)
+ScrollPage.CanvasSize = UDim2.new(0, 0, 0, 850)
 ScrollPage.ScrollBarThickness = 6
 ScrollPage.Parent = MainFrame
 
@@ -255,7 +263,7 @@ task.spawn(function()
         task.wait(_G.CheatConfig.AntiAfkDelay)
     end
 end)
--- [[ PART 2: 3-Phase Inventory, Ore Magnet & Fixed Screen UI Ability Clicker ]]
+-- [[ PART 2: Smart Inventory Rotator, Comprehensive Ore Magnet & Dynamic Boss Distance Magnet ]]
 
 local ComprehensiveOresList = {
     "Iron", "Gold", "Diamond", "Bluesteel", "Amberstone", "Crystal", 
@@ -274,15 +282,20 @@ local function ExecuteInventoryManagement()
     if not backpack or not character then return end
 
     local currentTool = character:FindFirstChildOfClass("Tool")
-    local targetToolName = nil
-
-    if _G.FarmState.CurrentPhase == "Greataxe" then
-        targetToolName = "Greataxe of Love"
-    elseif _G.FarmState.CurrentPhase == "Heartbanisher" then
-        targetToolName = "Heartbanisher"
-    elseif _G.FarmState.CurrentPhase == "Pickaxe" then
-        targetToolName = "Ultimate Pickaxe"
+    
+    if not currentTool then
+        local fallbackTool = backpack:FindFirstChild(_G.CheatConfig.MainFallbackTool)
+        if fallbackTool then
+            fallbackTool.Parent = character
+            _G.FarmState.LastMode = _G.CheatConfig.MainFallbackTool
+            return
+        end
     end
+
+    local currentPhaseData = _G.CustomRotationSequence[_G.FarmState.CurrentPhaseIndex]
+    if not currentPhaseData then return end
+    
+    local targetToolName = currentPhaseData.Name
 
     if targetToolName and _G.FarmState.LastMode ~= targetToolName then
         if not currentTool or currentTool.Name ~= targetToolName then
@@ -296,21 +309,16 @@ local function ExecuteInventoryManagement()
     end
 end
 
--- ИСПРАВЛЕННЫЙ МЕТОД ОБХОДА МЕТАТАБЛИЦ: Нажатие физических кнопок UI способностей на экране
 local function ClickScreenAbilityButtons()
     local playerGui = player:FindFirstChild("PlayerGui")
     if not playerGui then return end
 
-    -- Сканируем весь графический интерфейс игрока на мобильном экране
     for _, guiObj in ipairs(playerGui:GetDescendants()) do
         if guiObj:IsA("TextButton") or guiObj:IsA("ImageButton") then
             local nameLower = string.lower(guiObj.Name)
             local textLower = guiObj:IsA("TextButton") and string.lower(guiObj.Text) or ""
-            
-            -- Проверяем любые совпадения с кнопками способностей (Hearthbleed, Barrage, X, Skill)
             if string.find(nameLower, "heart") or string.find(nameLower, "bleed") or string.find(nameLower, "skill") or string.find(nameLower, "ability") or string.find(textLower, "heart") or nameLower == "x" then
                 pcall(function()
-                    -- Имитируем реальное нажатие на кнопку интерфейса в обход античита
                     guiObj:Activate()
                     local events = guiObj:FindFirstChildOfClass("RemoteEvent") or guiObj:FindFirstChildOfClass("BindableEvent")
                     if events then events:FireServer() end
@@ -372,16 +380,10 @@ local function ProcessWorldTriggers()
 
     if _G.CheatConfig.AutoClickTools then
         local tool = character:FindFirstChildOfClass("Tool")
-        if tool then 
-            pcall(function() tool:Activate() end)
-            -- Вызываем клик по экранным кнопкам способностей всегда, когда в руке боевое оружие
-            if tool.Name == "Heartbanisher" or tool.Name == "Greataxe of Love" then
-                ClickScreenAbilityButtons()
-            end
-        end
+        if tool then pcall(function() tool:Activate() end) end
+        ClickScreenAbilityButtons()
     end
 
-    -- МОДЕРНИЗИРОВАННЫЙ МОДУЛЬ РУДЫ: ФИКСАЦИЯ ПЕРЕД ЛИЦОМ ИГРОКА
     if _G.CheatConfig.MagnetOres then
         for _, mineName in ipairs(_G.CheatConfig.MineFolders) do
             local mineFolder = Workspace:FindFirstChild(mineName)
@@ -406,8 +408,7 @@ local function ProcessWorldTriggers()
                                     orePart.Anchored = true 
                                     orePart.Velocity = Vector3.new(0, 0, 0)
                                     orePart.RotVelocity = Vector3.new(0, 0, 0)
-                                    -- Руда прибивается на уровень груди перед игроком
-                                    orePart.CFrame = rootPart.CFrame * CFrame.new(0, 0, -2)
+                                    orePart.CFrame = rootPart.CFrame * CFrame.new(0, 0, -2) 
                                 end)
                             end
                         end
@@ -417,6 +418,7 @@ local function ProcessWorldTriggers()
         end
     end
 
+    -- ⚔️ ТРЕБОВАНИЕ: ДИНАМИЧЕСКИЙ РАСЧЕТ ДИСТАНЦИИ НА ОСНОВЕ РАЗМЕРА ТОРСА ВРАГА
     if _G.CheatConfig.MagnetMobs then
         for _, obj in ipairs(Workspace:GetChildren()) do
             if obj:IsA("Model") and obj ~= character and obj:FindFirstChildOfClass("Humanoid") then
@@ -424,7 +426,14 @@ local function ProcessWorldTriggers()
                 local mobHumanoid = obj:FindFirstChildOfClass("Humanoid")
                 if mobRoot and mobHumanoid and mobHumanoid.Health > 0 then
                     pcall(function()
-                        mobRoot.CFrame = rootPart.CFrame * CFrame.new(0, 0, -4)
+                        -- Измеряем размер хитбокса (торса) конкретного моба по оси Z (глубина/толщина)
+                        local enemyTorsoSize = mobRoot.Size.Z
+                        
+                        -- Половина размера торса врага + 2 стада безопасного отступа для идеальной регистрации урона
+                        local calculatedDistance = (enemyTorsoSize / 2) + 2
+                        
+                        -- Фиксируем врага строго перед лицом на расчетной дистанции
+                        mobRoot.CFrame = rootPart.CFrame * CFrame.new(0, 0, -calculatedDistance)
                     end)
                 end
             end
@@ -466,14 +475,18 @@ end)
 
 task.spawn(function()
     while true do
-        _G.FarmState.CurrentPhase = "Greataxe"
-        task.wait(_G.CheatConfig.GreataxeTime)
+        local currentPhaseData = _G.CustomRotationSequence[_G.FarmState.CurrentPhaseIndex]
+        if currentPhaseData then
+            local delayTime = _G.CheatConfig[currentPhaseData.DurationKey] or 2
+            task.wait(delayTime)
+        else
+            task.wait(2)
+        end
         
-        _G.FarmState.CurrentPhase = "Heartbanisher"
-        task.wait(_G.CheatConfig.HeartbanisherTime)
-        
-        _G.FarmState.CurrentPhase = "Pickaxe"
-        task.wait(_G.CheatConfig.PickaxeTime)
+        _G.FarmState.CurrentPhaseIndex = _G.FarmState.CurrentPhaseIndex + 1
+        if _G.FarmState.CurrentPhaseIndex > #_G.CustomRotationSequence then
+            _G.FarmState.CurrentPhaseIndex = 1
+        end
     end
 end)
 
@@ -487,8 +500,7 @@ end)
 task.spawn(function()
     while true do
         task.wait(60)
-        ExecuteScheduledFly() 
-    end
+            ExecuteScheduledFly()
+end
 end)
-
-print("[Elite Hub v14.0]: Физическая эмуляция кликов способностей на экране активирована!")
+print("[Elite Hub v15.5]: Динамическая дистанция боссов активирована успешно!")
