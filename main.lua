@@ -52,7 +52,6 @@ _G.CustomRotationSequence = {
     {Name = "Ultimate Pickaxe", DurationKey = "PickaxeTime"}
 }
 print("[Elite Hub]: Часть 1 успешно инициализирована!")
--- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub ]]
 -- [[ ЧАСТЬ 2 ИЗ 4: Отрисовка Меню ]]
 
 local Players = game:GetService("Players")
@@ -206,7 +205,6 @@ CreateInput("Скорость вращения персонажа", "SpinSpeed",
 CreateInput("Интервал Анти-АФК кликов (сек)", "AntiAfkDelay", true)
 CreateInput("Интервал облета кнопок (сек)", "ScheduledFlyInterval", true)
 print("[Elite Hub]: Часть 2 успешно загружена!")
--- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub ]]
 -- [[ ЧАСТЬ 3 ИЗ 4: Автоклики и Сверх-прожим Способностей ]]
 
 local RunService = game:GetService("RunService")
@@ -276,7 +274,6 @@ task.spawn(function()
     end
 end)
 print("[Elite Hub]: Часть 3 успешно загружена!")
--- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub ]]
 -- [[ ЧАСТЬ 4 ИЗ 4: Магниты с Заморозкой, Ротация, Полет и Финал ]]
 
 local Workspace = game:GetService("Workspace")
