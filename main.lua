@@ -2,7 +2,7 @@
 -- [[ ЧАСТЬ 1 ИЗ 4: Конфигурация и Таблицы ]]
 
 if _G.CraftwarsEliteLoaded then
-    local oldGui = game:GetService("CoreGui"):FindFirstChild("CraftwarsEliteGui") or game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("CraftwarsEliteGui")
+    local oldGui = game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("CraftwarsEliteGui")
     if oldGui then oldGui:Destroy() end
 end
 _G.CraftwarsEliteLoaded = true
