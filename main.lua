@@ -377,10 +377,20 @@ local function ProcessWorldTriggers()
     end
 
     if _G.CheatConfig.AutoClickPrompts and not _G.FarmState.IsFlyingToButtons then
-        for _, o in ipairs(Workspace:GetDescendants()) do if o:IsA("ProximityPrompt") then pcall(function() if fireproximityprompt then fireproximityprompt(o) else o:InputHoldBegin() task.wait(0.01) o:InputHoldEnd() end
+        for _, o in ipairs(Workspace:GetDescendants()) do 
+            if o:IsA("ProximityPrompt") then 
+                pcall(function() 
+                    if fireproximityprompt then 
+                        fireproximityprompt(o) 
+                    else 
+                        o:InputHoldBegin() 
+                        task.wait(0.01) 
+                        o:InputHoldEnd() 
+                    end 
+                end) 
+            end 
+        end
     end
-end
-
 RunService.Heartbeat:Connect(function()
     if _G.CheatConfig.MainFarmActive and not _G.FarmState.IsFlyingToButtons and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
         local cf = CFrame.new(_G.CheatConfig.TargetX, _G.CheatConfig.TargetY, _G.CheatConfig.TargetZ)
