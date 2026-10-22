@@ -501,6 +501,6 @@ task.spawn(function()
     while true do
         task.wait(60)
             ExecuteScheduledFly()
-end
+    end
 end)
 print("[Elite Hub v15.5]: Динамическая дистанция боссов активирована успешно!")
