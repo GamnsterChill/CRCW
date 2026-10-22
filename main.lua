@@ -391,6 +391,8 @@ local function ProcessWorldTriggers()
             end 
         end
     end
+end -- Вот этот end закрывает функцию ProcessWorldTriggers правильно!
+
 RunService.Heartbeat:Connect(function()
     if _G.CheatConfig.MainFarmActive and not _G.FarmState.IsFlyingToButtons and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
         local cf = CFrame.new(_G.CheatConfig.TargetX, _G.CheatConfig.TargetY, _G.CheatConfig.TargetZ)
@@ -415,4 +417,3 @@ end)
 task.spawn(function() while true do ProcessWorldTriggers() task.wait(_G.CheatConfig.TriggerDelay) end end)
 task.spawn(function() while true do task.wait(_G.CheatConfig.ScheduledFlyInterval) if _G.CheatConfig.ScheduledFlyActive then ExecuteScheduledFly() end end end)
 print("[Elite Hub v15.5]: Последняя 4-я часть успешно загружена. Всё готово к фарму!")
-    
