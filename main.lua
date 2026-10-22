@@ -221,11 +221,11 @@ task.spawn(function()
         if _G.CheatConfig.MainFarmActive and not _G.FarmState.IsFlyingToButtons then
             if _G.CheatConfig.SpamKeysActive then
                 for _, key in ipairs(inputKeys) do
-                    pcall(function() VirtualUser:SetKeyDown(key) RunService.Heartbeat:Wait() VirtualUser:SetKeyUp(key) end)
+                    pcall(function() VirtualUser:SetKeyDown(key) task.wait(0.01) VirtualUser:SetKeyUp(key) end)
                 end
             end
             if _G.CheatConfig.ScreenClickActive then
-                pcall(function() VirtualUser:Button1Down(Vector2.new(100, 100)) RunService.Heartbeat:Wait() VirtualUser:Button1Up(Vector2.new(100, 100)) end)
+                pcall(function() VirtualUser:Button1Down(Vector2.new(100, 100)) task.wait(0.01) VirtualUser:Button1Up(Vector2.new(100, 100)) end)
             end
         end
         task.wait(_G.CheatConfig.ClickDelay) 
