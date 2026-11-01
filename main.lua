@@ -21,23 +21,30 @@ _G.CheatConfig = {
     ClickDelay = 0.01,      
     MineFolders = {"Mine", "Mine2", "Mine3"},
     ScheduledFlyInterval = 60, 
-    MainFarmActive = true,
-    SpinActive = true,
-    MagnetOres = true,
-    MagnetMobs = true,
-    AutoClickTools = true,
-    AutoClickPrompts = true,
-    AntiAfkActive = true,
-    AntiSitActive = true,
-    SpamKeysActive = true,   
-    ScreenClickActive = true,
-    AutoRotationActive = true,       
-    AutoAbilitiesActive = true,      
-    ScheduledFlyActive = true,       
-    ForceCameraActive = true,        
-    UseRemoteAbilities = true,       
-    UseVirtualClickAbilities = true, 
-    UseKeyPressAbilities = true      
+    
+    -- ВСЕ ФУНКЦИИ ИЗНАЧАЛЬНО ВЫКЛЮЧЕНЫ
+    MainFarmActive = false,
+    SpinActive = false,
+    MagnetOres = false,
+    MagnetMobs = false,
+    AutoClickTools = false,
+    AutoClickPrompts = false,
+    AntiAfkActive = false,
+    AntiSitActive = false,
+    SpamKeysActive = false,   
+    ScreenClickActive = false,
+    AutoRotationActive = false,       
+    AutoAbilitiesActive = false,      
+    ScheduledFlyActive = false,       
+    ForceCameraActive = false,        
+    UseRemoteAbilities = false,       
+    UseVirtualClickAbilities = false, 
+    UseKeyPressAbilities = false,
+
+    -- Настраиваемые предметы игрока
+    CustomTool1 = "Greataxe of Love",
+    CustomTool2 = "Heartbanisher",
+    CustomTool3 = "Ultimate Pickaxe"
 }
 
 _G.FarmState = {
@@ -46,10 +53,11 @@ _G.FarmState = {
     IsFlyingToButtons = false
 }
 
+-- Динамическая таблица последовательности, берущая имена из конфига
 _G.CustomRotationSequence = {
-    {Name = "Greataxe of Love", DurationKey = "GreataxeTime"},
-    {Name = "Heartbanisher", DurationKey = "HeartbanisherTime"},
-    {Name = "Ultimate Pickaxe", DurationKey = "PickaxeTime"}
+    {ConfigNameKey = "CustomTool1", DurationKey = "GreataxeTime"},
+    {ConfigNameKey = "CustomTool2", DurationKey = "HeartbanisherTime"},
+    {ConfigNameKey = "CustomTool3", DurationKey = "PickaxeTime"}
 }
 print("[Elite Hub]: Часть 1 успешно инициализирована!")
 -- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub ]]
@@ -60,7 +68,6 @@ local player = Players.LocalPlayer
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "CraftwarsEliteGui"
--- Безопасно крепим к PlayerGui, чтобы обойти блокировки Delta
 ScreenGui.Parent = player:WaitForChild("PlayerGui")
 
 local ToggleMenuBtn = Instance.new("TextButton")
@@ -83,7 +90,7 @@ MainFrame.Parent = ScreenGui
 
 local Header = Instance.new("TextLabel")
 Header.Size = UDim2.new(1, 0, 0, 32)
-Header.Text = "⚙️ CRAFTWARS ELITE v15.5"
+Header.Text = "⚙️ CRAFTWARS ELITE v15.5 (Custom Items)"
 Header.TextColor3 = Color3.fromRGB(255, 255, 255)
 Header.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Header.Font = Enum.Font.SourceSansBold
@@ -100,7 +107,7 @@ local ScrollPage = Instance.new("ScrollingFrame")
 ScrollPage.Size = UDim2.new(1, -12, 1, -40)
 ScrollPage.Position = UDim2.new(0, 6, 0, 36)
 ScrollPage.BackgroundTransparency = 1
-ScrollPage.CanvasSize = UDim2.new(0, 0, 0, 1150)
+ScrollPage.CanvasSize = UDim2.new(0, 0, 0, 1280) -- Увеличено под новые инпуты предметов
 ScrollPage.ScrollBarThickness = 4
 ScrollPage.Parent = MainFrame
 
@@ -197,16 +204,21 @@ CreateInput("Координата Телепорта X", "TargetX", true)
 CreateInput("Координата Телепорта Y", "TargetY", true)
 CreateInput("Координата Телепорта Z", "TargetZ", true)
 CreateInput("Запасное оружие (Fallback)", "MainFallbackTool", false)
-CreateInput("Время удержания Greataxe (сек)", "GreataxeTime", true)
-CreateInput("Время удержания Heartbanisher (сек)", "HeartbanisherTime", true)
-CreateInput("Время удержания Кирки (сек)", "PickaxeTime", true)
+CreateInput("Время удержания Предмета 1 (сек)", "GreataxeTime", true)
+CreateInput("Время удержания Предмета 2 (сек)", "HeartbanisherTime", true)
+CreateInput("Время удержания Предмета 3 (сек)", "PickaxeTime", true)
 CreateInput("Задержка автокликов экрана (сек)", "ClickDelay", true)
 CreateInput("Задержка магнита/триггеров (сек)", "TriggerDelay", true)
 CreateInput("Скорость вращения персонажа", "SpinSpeed", true)
 CreateInput("Интервал Анти-АФК кликов (сек)", "AntiAfkDelay", true)
 CreateInput("Интервал облета кнопок (сек)", "ScheduledFlyInterval", true)
-print("[Elite Hub]: Часть 2 успешно загружена!")
 
+-- Кастомная настройка предметов ротации напрямую из меню
+CreateInput("⚔️ Экипировать Предмет 1:", "CustomTool1", false)
+CreateInput("⚔️ Экипировать Предмет 2:", "CustomTool2", false)
+CreateInput("⚔️ Экипировать Предмет 3:", "CustomTool3", false)
+
+print("[Elite Hub]: Часть 2 успешно загружена!")
 -- [[ ЧАСТЬ 3 ИЗ 4: Автоклики и Сверх-прожим Способностей ]]
 
 local RunService = game:GetService("RunService")
@@ -289,15 +301,25 @@ local function ExecuteInventoryManagement()
     local backpack, character = player:FindFirstChild("Backpack"), player.Character
     if not backpack or not character then return end
     local currentTool = character:FindFirstChildOfClass("Tool")
+    
     if not currentTool then
         local fb = backpack:FindFirstChild(_G.CheatConfig.MainFallbackTool)
         if fb then fb.Parent = character _G.FarmState.LastMode = _G.CheatConfig.MainFallbackTool return end
     end
+    
     local phase = _G.CustomRotationSequence[_G.FarmState.CurrentPhaseIndex]
-    if phase and _G.FarmState.LastMode ~= phase.Name then
-        if not currentTool or currentTool.Name ~= phase.Name then
-            local t = backpack:FindFirstChild(phase.Name)
-            if t then _G.FarmState.LastMode = phase.Name if currentTool then currentTool.Parent = backpack end t.Parent = character end
+    if phase then
+        -- Динамически подгружаем имя предмета из TextBox текстового поля
+        local toolName = _G.CheatConfig[phase.ConfigNameKey]
+        if toolName and toolName ~= "" and _G.FarmState.LastMode ~= toolName then
+            if not currentTool or currentTool.Name ~= toolName then
+                local t = backpack:FindFirstChild(toolName)
+                if t then 
+                    _G.FarmState.LastMode = toolName 
+                    if currentTool then currentTool.Parent = backpack end 
+                    t.Parent = character 
+                end
+            end
         end
     end
 end
@@ -391,7 +413,7 @@ local function ProcessWorldTriggers()
             end 
         end
     end
-end -- Вот этот end закрывает функцию ProcessWorldTriggers правильно!
+end
 
 RunService.Heartbeat:Connect(function()
     if _G.CheatConfig.MainFarmActive and not _G.FarmState.IsFlyingToButtons and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
