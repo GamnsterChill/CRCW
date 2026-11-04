@@ -1,5 +1,5 @@
--- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub ]]
--- [[ ЧАСТЬ 1 ИЗ 4: Конфигурация и Таблицы ]]
+-- [[ PROJECT: Classic Retro Craftwars - Ultimate Hub ]]
+-- [[ ЧАСТЬ 1 ИЗ 5: Конфигурация, Состояние и Режим "Пистолет" ]]
 
 if _G.CraftwarsEliteLoaded then
     local oldGui = game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("CraftwarsEliteGui")
@@ -22,7 +22,7 @@ _G.CheatConfig = {
     MineFolders = {"Mine", "Mine2", "Mine3"},
     ScheduledFlyInterval = 60, 
     
-    -- ВСЕ ФУНКЦИИ ИЗНАЧАЛЬНО ВЫКЛЮЧЕНЫ
+    -- Стандартные функции
     MainFarmActive = false,
     SpinActive = false,
     MagnetOres = false,
@@ -41,7 +41,10 @@ _G.CheatConfig = {
     UseVirtualClickAbilities = false, 
     UseKeyPressAbilities = false,
 
-    -- Настраиваемые предметы игрока
+    -- [НОВАЯ ФУНКЦИЯ]: Режим "Пистолет"
+    PistolModeActive = false,
+
+    -- Выбранные предметы игрока
     CustomTool1 = "Greataxe of Love",
     CustomTool2 = "Heartbanisher",
     CustomTool3 = "Ultimate Pickaxe"
@@ -50,18 +53,47 @@ _G.CheatConfig = {
 _G.FarmState = {
     CurrentPhaseIndex = 1,
     LastMode = nil,
-    IsFlyingToButtons = false
+    IsFlyingToButtons = false,
+    CurrentEquippedToolName = ""
 }
 
--- Динамическая таблица последовательности, берущая имена из конфига
 _G.CustomRotationSequence = {
     {ConfigNameKey = "CustomTool1", DurationKey = "GreataxeTime"},
     {ConfigNameKey = "CustomTool2", DurationKey = "HeartbanisherTime"},
     {ConfigNameKey = "CustomTool3", DurationKey = "PickaxeTime"}
 }
-print("[Elite Hub]: Часть 1 успешно инициализирована!")
--- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub ]]
--- [[ ЧАСТЬ 2 ИЗ 4: Отрисовка Меню ]]
+
+-- Функция для получения списка всех уникальных предметов в Backpack и Character
+function _G.GetAvailableTools()
+    local tools = {}
+    local added = {}
+    local p = game:GetService("Players").LocalPlayer
+    
+    local function scan(dir)
+        if dir then
+            for _, item in ipairs(dir:GetChildren()) do
+                if item:IsA("Tool") and not added[item.Name] then
+                    added[item.Name] = true
+                    table.insert(tools, item.Name)
+                end
+            end
+        end
+    end
+    
+    if p then
+        scan(p:FindFirstChild("Backpack"))
+        scan(p.Character)
+    end
+    
+    if #tools == 0 then
+        return {"Greataxe of Love", "Heartbanisher", "Ultimate Pickaxe"}
+    end
+    return tools
+end
+
+print("[Ultimate Hub]: Часть 1 успешно инициализирована!")
+-- [[ PROJECT: Classic Retro Craftwars - Ultimate Hub ]]
+-- [[ ЧАСТЬ 2 ИЗ 5: Отрисовка Меню и Выпадающие Списки ]]
 
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
@@ -69,6 +101,7 @@ local player = Players.LocalPlayer
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "CraftwarsEliteGui"
 ScreenGui.Parent = player:WaitForChild("PlayerGui")
+ScreenGui.ResetOnSpawn = false
 
 local ToggleMenuBtn = Instance.new("TextButton")
 ToggleMenuBtn.Size = UDim2.new(0, 140, 0, 28)
@@ -81,8 +114,8 @@ ToggleMenuBtn.TextSize = 12
 ToggleMenuBtn.Parent = ScreenGui
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 420, 0, 380)
-MainFrame.Position = UDim2.new(0.5, -210, 0.25, 0)
+MainFrame.Size = UDim2.new(0, 430, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -215, 0.25, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.Active = true
 MainFrame.Draggable = true
@@ -90,7 +123,7 @@ MainFrame.Parent = ScreenGui
 
 local Header = Instance.new("TextLabel")
 Header.Size = UDim2.new(1, 0, 0, 32)
-Header.Text = "⚙️ CRAFTWARS ELITE v15.5 (Custom Items)"
+Header.Text = "⚙️ CRAFTWARS ULITE v16.0 (Pistol & Dropdowns)"
 Header.TextColor3 = Color3.fromRGB(255, 255, 255)
 Header.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Header.Font = Enum.Font.SourceSansBold
@@ -107,7 +140,7 @@ local ScrollPage = Instance.new("ScrollingFrame")
 ScrollPage.Size = UDim2.new(1, -12, 1, -40)
 ScrollPage.Position = UDim2.new(0, 6, 0, 36)
 ScrollPage.BackgroundTransparency = 1
-ScrollPage.CanvasSize = UDim2.new(0, 0, 0, 1280) -- Увеличено под новые инпуты предметов
+ScrollPage.CanvasSize = UDim2.new(0, 0, 0, 1450)
 ScrollPage.ScrollBarThickness = 4
 ScrollPage.Parent = MainFrame
 
@@ -115,7 +148,7 @@ local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.Padding = UDim.new(0, 5)
 UIListLayout.Parent = ScrollPage
 
-local function CreateToggle(text, configKey)
+function CreateToggle(text, configKey)
     local Frame = Instance.new("Frame")
     Frame.Size = UDim2.new(1, -10, 0, 30)
     Frame.BackgroundTransparency = 1
@@ -147,7 +180,7 @@ local function CreateToggle(text, configKey)
     updateBtn()
 end
 
-local function CreateInput(text, configKey, isNumber)
+function CreateInput(text, configKey, isNumber)
     local Frame = Instance.new("Frame")
     Frame.Size = UDim2.new(1, -10, 0, 30)
     Frame.BackgroundTransparency = 1
@@ -183,6 +216,82 @@ local function CreateInput(text, configKey, isNumber)
     end)
 end
 
+-- [НОВОЕ]: Динамический выпадающий список для выбора предметов из инвентаря
+function CreateDropdown(text, configKey)
+    local Frame = Instance.new("Frame")
+    Frame.Size = UDim2.new(1, -10, 0, 32)
+    Frame.BackgroundTransparency = 1
+    Frame.Parent = ScrollPage
+
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(0.5, 0, 1, 0)
+    Label.Text = "  " .. text
+    Label.TextColor3 = Color3.fromRGB(230, 230, 210)
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Font = Enum.Font.SourceSans
+    Label.TextSize = 13
+    Label.BackgroundTransparency = 1
+    Label.Parent = Frame
+
+    local MainBtn = Instance.new("TextButton")
+    MainBtn.Size = UDim2.new(0, 160, 0, 24)
+    MainBtn.Position = UDim2.new(0.55, 0, 0.1, 0)
+    MainBtn.Text = _G.CheatConfig[configKey] or "Нажми для выбора"
+    MainBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    MainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    MainBtn.Font = Enum.Font.SourceSans
+    MainBtn.TextSize = 12
+    MainBtn.Parent = Frame
+
+    local ListFrame = Instance.new("Frame")
+    ListFrame.Size = UDim2.new(0, 160, 0, 100)
+    ListFrame.Position = UDim2.new(0.55, 0, 0.9, 0)
+    ListFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    ListFrame.ZIndex = 10
+    ListFrame.Visible = false
+    ListFrame.Parent = Frame
+
+    local ListScroll = Instance.new("ScrollingFrame")
+    ListScroll.Size = UDim2.new(1, 0, 1, 0)
+    ListScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    ListScroll.ScrollBarThickness = 3
+    ListScroll.ZIndex = 10
+    ListScroll.Parent = ListFrame
+
+    local ListLayout = Instance.new("UIListLayout")
+    ListLayout.Parent = ListScroll
+
+    MainBtn.MouseButton1Click:Connect(function()
+        ListFrame.Visible = not ListFrame.Visible
+        if ListFrame.Visible then
+            for _, c in ipairs(ListScroll:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
+            local currentItems = _G.GetAvailableTools()
+            ListScroll.CanvasSize = UDim2.new(0, 0, 0, #currentItems * 22)
+            for _, itemName in ipairs(currentItems) do
+                local ItemBtn = Instance.new("TextButton")
+                ItemBtn.Size = UDim2.new(1, 0, 0, 20)
+                ItemBtn.Text = itemName
+                ItemBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+                ItemBtn.TextColor3 = Color3.fromRGB(230, 230, 230)
+                ItemBtn.Font = Enum.Font.SourceSans
+                ItemBtn.TextSize = 11
+                ItemBtn.ZIndex = 10
+                ItemBtn.Parent = ListScroll
+                
+                ItemBtn.MouseButton1Click:Connect(function()
+                    _G.CheatConfig[configKey] = itemName
+                    MainBtn.Text = itemName
+                    ListFrame.Visible = false
+                end)
+            end
+        end
+    end)
+end
+-- [[ PROJECT: Classic Retro Craftwars - Ultimate Hub ]]
+-- [[ ЧАСТЬ 3 ИЗ 5: Инициализация Элементов GUI ]]
+
+-- Переключатели режимов
+CreateToggle("🔥 РЕЖИМ ПИСТОЛЕТ (Мобы под вами + Смарт Спин)", "PistolModeActive")
 CreateToggle("ГЛАВНЫЙ ФАРМ (Телепорт в точку)", "MainFarmActive")
 CreateToggle("Вращение персонажа (Крутилка)", "SpinActive")
 CreateToggle("Магнит Ископаемых (Шахта)", "MagnetOres")
@@ -200,6 +309,8 @@ CreateToggle("Принудительная фиксация камеры", "Forc
 CreateToggle("  -> Способности: Вызов через Remote", "UseRemoteAbilities")
 CreateToggle("  -> Способности: Клики по кнопкам GUI", "UseVirtualClickAbilities")
 CreateToggle("  -> Способности: Эмуляция клавиш", "UseKeyPressAbilities")
+
+-- Текстовые поля настроек таймингов и задержек
 CreateInput("Координата Телепорта X", "TargetX", true)
 CreateInput("Координата Телепорта Y", "TargetY", true)
 CreateInput("Координата Телепорта Z", "TargetZ", true)
@@ -213,15 +324,15 @@ CreateInput("Скорость вращения персонажа", "SpinSpeed",
 CreateInput("Интервал Анти-АФК кликов (сек)", "AntiAfkDelay", true)
 CreateInput("Интервал облета кнопок (сек)", "ScheduledFlyInterval", true)
 
--- Кастомная настройка предметов ротации напрямую из меню
-CreateInput("⚔️ Экипировать Предмет 1:", "CustomTool1", false)
-CreateInput("⚔️ Экипировать Предмет 2:", "CustomTool2", false)
-CreateInput("⚔️ Экипировать Предмет 3:", "CustomTool3", false)
+-- Выпадающие списки выбора оружия (Вместо ручного ввода названия)
+CreateDropdown("⚔️ Выбрать Предмет 1:", "CustomTool1")
+CreateDropdown("⚔️ Выбрать Предмет 2:", "CustomTool2")
+CreateDropdown("⚔️ Выбрать Предмет 3:", "CustomTool3")
 
-print("[Elite Hub]: Часть 2 успешно загружена!")
--- [[ ЧАСТЬ 3 ИЗ 4: Автоклики и Сверх-прожим Способностей ]]
+print("[Ultimate Hub]: Часть 3 успешно загружена!")
+-- [[ PROJECT: Classic Retro Craftwars - Ultimate Hub ]]
+-- [[ ЧАСТЬ 4 ИЗ 5: Автоклики и Сверх-прожим Способностей ]]
 
-local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
 local player = game:GetService("Players").LocalPlayer
 
@@ -230,7 +341,7 @@ local abilityKeys = {"Z", "X", "C", "V", "F", "E", "Q"}
 
 task.spawn(function()
     while true do
-        if _G.CheatConfig.MainFarmActive and not _G.FarmState.IsFlyingToButtons then
+        if (_G.CheatConfig.MainFarmActive or _G.CheatConfig.PistolModeActive) and not _G.FarmState.IsFlyingToButtons then
             if _G.CheatConfig.SpamKeysActive then
                 for _, key in ipairs(inputKeys) do
                     pcall(function() VirtualUser:SetKeyDown(key) task.wait(0.01) VirtualUser:SetKeyUp(key) end)
@@ -287,8 +398,10 @@ task.spawn(function()
         task.wait(0.05)
     end
 end)
-print("[Elite Hub]: Часть 3 успешно загружена!")
--- [[ ЧАСТЬ 4 ИЗ 4: Магниты с Заморозкой, Ротация, Полет и Финал ]]
+
+print("[Ultimate Hub]: Часть 4 успешно загружена!")
+-- [[ PROJECT: Classic Retro Craftwars - Ultimate Hub ]]
+-- [[ ЧАСТЬ 5 ИЗ 5: Мировые триггеры, Ротация и Исполнение условий ]]
 
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
@@ -309,7 +422,6 @@ local function ExecuteInventoryManagement()
     
     local phase = _G.CustomRotationSequence[_G.FarmState.CurrentPhaseIndex]
     if phase then
-        -- Динамически подгружаем имя предмета из TextBox текстового поля
         local toolName = _G.CheatConfig[phase.ConfigNameKey]
         if toolName and toolName ~= "" and _G.FarmState.LastMode ~= toolName then
             if not currentTool or currentTool.Name ~= toolName then
@@ -322,32 +434,7 @@ local function ExecuteInventoryManagement()
             end
         end
     end
-end
-
-local function ExecuteScheduledFly()
-    if not _G.CheatConfig.ScheduledFlyActive then return end
-    local character = player.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-    local root = character.HumanoidRootPart
-    local prompts = {}
-    for _, obj in ipairs(Workspace:GetDescendants()) do if obj:IsA("ProximityPrompt") then table.insert(prompts, obj) end end
-    if #prompts == 0 then return end
-    _G.FarmState.IsFlyingToButtons = true
-    for _, p in ipairs(prompts) do
-        if not _G.CheatConfig.ScheduledFlyActive then break end
-        if p and p.Parent then
-            pcall(function()
-                local part = p.Parent:IsA("BasePart") and p.Parent or p.Parent:FindFirstChildOfClass("BasePart")
-                if part then
-                    root.CFrame = part.CFrame * CFrame.new(0, 2, 0)
-                    task.wait(0.2)
-                    if fireproximityprompt then fireproximityprompt(p) else p:InputHoldBegin() task.wait(p.HoldDuration + 0.05) p:InputHoldEnd() end
-                    task.wait(0.15)
-                end
-            end)
-        end
-    end
-    _G.FarmState.IsFlyingToButtons = false
+    if currentTool then _G.FarmState.CurrentEquippedToolName = currentTool.Name else _G.FarmState.CurrentEquippedToolName = "" end
 end
 
 local function ProcessWorldTriggers()
@@ -380,17 +467,22 @@ local function ProcessWorldTriggers()
         end
     end
 
-    if _G.CheatConfig.MagnetMobs then
+    -- Магнит обычный ИЛИ логика режима "Пистолет"
+    if _G.CheatConfig.MagnetMobs or _G.CheatConfig.PistolModeActive then
         for _, obj in ipairs(Workspace:GetChildren()) do
             if obj:IsA("Model") and obj ~= character and obj:FindFirstChildOfClass("Humanoid") then
                 local mRoot = obj:FindFirstChild("HumanoidRootPart")
                 local mHum = obj:FindFirstChildOfClass("Humanoid")
                 if mRoot and mHum and mHum.Health > 0 then
                     pcall(function()
-                        mRoot.CFrame = root.CFrame * CFrame.new(0, 0, -((mRoot.Size.Z / 2) + 2))
+                        if _G.CheatConfig.PistolModeActive then
+                            -- Мобы стягиваются под игрока (на 6 блоков ниже текущей высоты игрока)
+                            mRoot.CFrame = CFrame.new(root.Position.X, root.Position.Y - 6, root.Position.Z)
+                        else
+                            mRoot.CFrame = root.CFrame * CFrame.new(0, 0, -((mRoot.Size.Z / 2) + 2))
+                        end
                         mRoot.Anchored = true
                         mRoot.Velocity = Vector3.new(0,0,0)
-                        mRoot.RotVelocity = Vector3.new(0,0,0)
                         mHum.PlatformStand = true
                     end)
                 end
@@ -399,27 +491,34 @@ local function ProcessWorldTriggers()
     end
 
     if _G.CheatConfig.AutoClickPrompts and not _G.FarmState.IsFlyingToButtons then
-        for _, o in ipairs(Workspace:GetDescendants()) do 
-            if o:IsA("ProximityPrompt") then 
-                pcall(function() 
-                    if fireproximityprompt then 
-                        fireproximityprompt(o) 
-                    else 
-                        o:InputHoldBegin() 
-                        task.wait(0.01) 
-                        o:InputHoldEnd() 
-                    end 
-                end) 
-            end 
-        end
+        for _, o in ipairs(Workspace:GetDescendants()) do if o:IsA("ProximityPrompt") then pcall(function() if fireproximityprompt then fireproximityprompt(o) else o:InputHoldBegin() task.wait(0.01) o:InputHoldEnd() end end) end end
     end
 end
 
 RunService.Heartbeat:Connect(function()
-    if _G.CheatConfig.MainFarmActive and not _G.FarmState.IsFlyingToButtons and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+    local root = character.HumanoidRootPart
+
+    -- Приоритет позиционирования и крутилки
+    if _G.CheatConfig.PistolModeActive then
+        -- Позиция Игрока сверху, лицом СТРОГО вниз
+        local targetPos = Vector3.new(_G.CheatConfig.TargetX, _G.CheatConfig.TargetY, _G.CheatConfig.TargetZ)
+        local baseCFrame = CFrame.new(targetPos) * CFrame.Angles(math.rad(-90), 0, 0)
+        
+        -- Умная крутилка: Игрок крутится ВСЕГДА, КРОМЕ случаев, когда в руках кирка (Pickaxe)
+        local isPickaxe = string.find(string.lower(_G.FarmState.CurrentEquippedToolName), "pickaxe")
+        
+        if _G.CheatConfig.SpinActive and not isPickaxe then
+            root.CFrame = baseCFrame * CFrame.Angles(0, 0, math.rad(tick() * _G.CheatConfig.SpinSpeed * 100) % 360)
+        else
+            root.CFrame = baseCFrame
+        end
+    elseif _G.CheatConfig.MainFarmActive and not _G.FarmState.IsFlyingToButtons then
         local cf = CFrame.new(_G.CheatConfig.TargetX, _G.CheatConfig.TargetY, _G.CheatConfig.TargetZ)
-        player.Character.HumanoidRootPart.CFrame = _G.CheatConfig.SpinActive and cf * CFrame.Angles(0, math.rad(tick() * _G.CheatConfig.SpinSpeed * 100) % 360, 0) or cf
+        root.CFrame = _G.CheatConfig.SpinActive and cf * CFrame.Angles(0, math.rad(tick() * _G.CheatConfig.SpinSpeed * 100) % 360, 0) or cf
     end
+    
     ExecuteInventoryManagement()
 end)
 
@@ -437,5 +536,6 @@ task.spawn(function()
 end)
 
 task.spawn(function() while true do ProcessWorldTriggers() task.wait(_G.CheatConfig.TriggerDelay) end end)
-task.spawn(function() while true do task.wait(_G.CheatConfig.ScheduledFlyInterval) if _G.CheatConfig.ScheduledFlyActive then ExecuteScheduledFly() end end end)
-print("[Elite Hub v15.5]: Последняя 4-я часть успешно загружена. Всё готово к фарму!")
+print("[Ultimate Hub v16.0]: Скрипт полностью запущен и готов к работе!")
+
+print("[Ultimate Hub]: Часть 2 успешно загружена!")
