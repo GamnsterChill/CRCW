@@ -99,7 +99,7 @@ end
 
 print("[Elite Hub]: Часть 1 успешно инициализирована!")
 -- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub ]]
--- [[ ЧАСТЬ 2 ИЗ 6: Отрисовка Меню и Динамика UI ]]
+-- [[ ЧАСТЬ 2 ИЗ 6: Создание Базового UI ]]
 
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
@@ -167,7 +167,7 @@ end
 
 print("[Elite Hub]: Часть 2 успешно загружена!")
 -- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub ]]
--- [[ ЧАСТЬ 3 ИЗ 6: Фабрика Компонентов Интерфейса ]]
+-- [[ ЧАСТЬ 3 ИЗ 6: Функции Генерации Кнопок и Полей (Фикс Порядка) ]]
 
 function CreateToggle(text, configKey)
     local Frame = Instance.new("Frame")
@@ -182,7 +182,7 @@ function CreateToggle(text, configKey)
     Label.Size = UDim2.new(0.75, 0, 1, 0)
     Label.Text = "  " .. text
     Label.TextColor3 = Color3.fromRGB(210, 210, 210)
-    Label.TextXAlignment = Enum.TextTextXAlignment and Enum.TextXAlignment.Left or Enum.TextXAlignment.Left
+    Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.Font = Enum.Font.SourceSans
     Label.TextSize = 13
     Label.BackgroundTransparency = 1
@@ -204,9 +204,7 @@ function CreateToggle(text, configKey)
     Button.MouseButton1Click:Connect(function() 
         _G.CheatConfig[configKey] = not _G.CheatConfig[configKey] 
         updateBtn() 
-        if configKey == "PistolModeActive" then
-            _G.UpdateMenuVisibility()
-        end
+        _G.UpdateMenuVisibility()
     end)
     updateBtn()
 end
@@ -217,6 +215,8 @@ function CreateInput(text, configKey, isNumber)
     Frame.Size = UDim2.new(1, -10, 0, 30)
     Frame.BackgroundTransparency = 1
     Frame.Parent = ScrollPage
+    
+    _G.MenuElementsRegistry[configKey] = Frame
 
     local Label = Instance.new("TextLabel")
     Label.Size = UDim2.new(0.65, 0, 1, 0)
@@ -254,6 +254,8 @@ function CreateDropdown(text, configKey)
     Frame.Size = UDim2.new(1, -10, 0, 32)
     Frame.BackgroundTransparency = 1
     Frame.Parent = ScrollPage
+    
+    _G.MenuElementsRegistry[configKey] = Frame
 
     local Label = Instance.new("TextLabel")
     Label.Size = UDim2.new(0.5, 0, 1, 0)
@@ -325,12 +327,12 @@ end
 
 print("[Elite Hub]: Часть 3 успешно загружена!")
 -- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub ]]
--- [[ ЧАСТЬ 4 ИЗ 6: Инициализация Элементов и Авто-Прожим ]]
+-- [[ ЧАСТЬ 4 ИЗ 6: Отрисовка Кнопок в Интерфейсе ]]
 
 -- Основные переключатели
 CreateToggle("🔫 РЕЖИМ ПИСТОЛЕТ (Мобы на месте фарма)", "PistolModeActive")
 CreateToggle("ГЛАВНЫЙ ФАРМ (Телепорт в точку)", "MainFarmActive")
-CreateToggle("  -> Включить ЛИФТ (Вверх-Вниз на фарме)", "LiftActive")
+CreateToggle("  -> Включить ЛИФТ (Вверх-Вниз на фарма)", "LiftActive")
 CreateToggle("Вращение персонажа (Крутилка)", "SpinActive")
 CreateToggle("Магнит Ископаемых (Шахта)", "MagnetOres")
 CreateToggle("Магнит всех Монстров к лицу", "MagnetMobs")
@@ -367,12 +369,13 @@ CreateDropdown("⚔️ Выбрать Предмет 1:", "CustomTool1")
 CreateDropdown("⚔️ Выбрать Предмет 2:", "CustomTool2")
 CreateDropdown("⛏️ Выбрать Предмет 3 (Кирка):", "CustomTool3")
 
+_G.UpdateMenuVisibility()
+
 local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
 local player = game:GetService("Players").LocalPlayer
 
 local inputKeys = {Enum.KeyCode.E, Enum.KeyCode.Q, Enum.KeyCode.R, Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C, Enum.KeyCode.F}
-local abilityKeys = {"Z", "X", "C", "V", "F", "E", "Q"}
 
 task.spawn(function()
     while true do
@@ -393,7 +396,7 @@ end)
 
 print("[Elite Hub]: Часть 4 успешно загружена!")
 -- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub ]]
--- [[ ЧАСТЬ 5 ИЗ 6: Авто-Утилиты и Менеджмент Ротации ]]
+-- [[ ЧАСТЬ 5 ИЗ 6: Ротация Инвентаря и Кликер Способностей ]]
 
 local player = game:GetService("Players").LocalPlayer
 local VirtualUser = game:GetService("VirtualUser")
@@ -474,7 +477,7 @@ end
 
 print("[Elite Hub]: Часть 5 успешно загружена!")
 -- [[ PROJECT: Classic Retro Craftwars - Elite Customizable Hub ]]
--- [[ ЧАСТЬ 6 ИЗ 6: Физический Движок Позиций и Камеры ]]
+-- [[ ЧАСТЬ 6 ИЗ 6: Физический Движок Позиций и Фикс Персонажа ]]
 
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
@@ -601,14 +604,17 @@ task.spawn(function()
 end)
 
 task.spawn(function() while true do _G.ProcessWorldTriggers() task.wait(_G.CheatConfig.TriggerDelay) end end)
-task.spawn(function() while true do task.wait(_G.CheatConfig.ScheduledFlyInterval) if _G.CheatConfig.ScheduledFlyActive then _G.ExecuteScheduledFly() end end end)
 
 player.CharacterAdded:Connect(function()
     task.wait(1)
     local playerGui = player:WaitForChild("PlayerGui", 5)
-    if playerGui and not playerGui:FindFirstChild("CraftwarsEliteGui") then
-        ScreenGui.Parent = playerGui
+    if playerGui then
+        local screen = playerGui:FindFirstChild("CraftwarsEliteGui")
+        if not screen then
+            -- Перепривязываем GUI при спавне персонажа
+            _G.CraftwarsEliteLoaded = false
+        end
     end
 end)
 
-print("[Elite Hub v16.5]: Скрипт успешно развернут, все фиксы применены!");
+print("[Elite Hub v16.6]: Ошибка отображения устранена. Все кнопки успешно выведены на экран!");
